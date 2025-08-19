@@ -186,16 +186,24 @@
     }
 
     document.getElementById("createSiteBtn").addEventListener("click", () => {
-      const siteName = prompt("Nom du site :");
-      if (!siteName) return;
-      const newSiteId = "site" + Date.now();
-      db.ref(`users/${currentUser.uid}/sites/${newSiteId}`).set({
-        name: siteName,
-        online: false,
-        createdAt: new Date().toISOString(),
-        content: "<h1>Bienvenue sur votre site !</h1>"
-      });
-    });
+  const siteName = prompt("Nom du site :");
+  if (!siteName) return;
+
+  const newSiteId = "site" + Date.now();
+
+  // Création du site avec structure de fichiers par défaut
+  const siteData = {
+    name: siteName,
+    online: false,
+    createdAt: new Date().toISOString(),
+    files: {
+      "index.html": "Bienvenue!"
+    }
+  };
+
+  db.ref(`users/${currentUser.uid}/sites/${newSiteId}`).set(siteData);
+});
+
 
     function editSite(siteId) {
       db.ref(`users/${currentUser.uid}/nowediting`).set(siteId).then(() => {
