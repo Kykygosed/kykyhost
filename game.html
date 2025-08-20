@@ -1,28 +1,322 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KykyUNO - Partie</title>
-<link rel="stylesheet" href="css/style.css">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <title>KykyUNO - Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0e0e0e;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    #gameContainer {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+    #roomCode {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      padding: 8px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    #players {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .player {
+      position: absolute;
+      text-align: center;
+    }
+    .player .cards {
+      margin-top: 5px;
+    }
+    .player .cards img {
+      width: 30px;
+      margin: 1px;
+    }
+    #center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+    #center img {
+      width: 100px;
+      height: 140px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px black;
+    }
+    #hand {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .card {
+      width: 80px;
+      height: 120px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-10px);
+    }
+    .card span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+    }
+    .timerBar {
+      width: 100px;
+      height: 8px;
+      background: #444;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 5px auto;
+    }
+    .timerFill {
+      width: 100%;
+      height: 100%;
+      background: lime;
+      transition: width 1s linear;
+    }
+    #winnerScreen {
+      position: absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.9);
+      color:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      font-size:30px;
+      display:none;
+    }
+    #winnerScreen button{
+      margin-top:20px;
+      padding:10px 20px;
+      font-size:20px;
+    }
+  </style>
 </head>
 <body>
-<div id="gameBoard">
-  <div id="topBar">
-    <span>Code de partie : <span id="gameCode"></span></span>
+  <div id="gameContainer">
+    <div id="roomCode">Code: ...</div>
+    <div id="players"></div>
+    <div id="center">
+      <img id="draft" src="draft.png">
+      <img id="actual" src="actual.png">
+    </div>
+    <div id="hand"></div>
+    <div id="winnerScreen">
+      <div id="winnerText"></div>
+      <button onclick="restart()">Relancer</button>
+      <button onclick="exit()">Quitter</button>
+    </div>
   </div>
-  <div id="centralDeck">
-    <img id="draft" src="images/draft.png" alt="Piocher">
-    <img id="actual" src="images/actual.png" alt="Défausse">
-  </div>
-  <div id="playersCircle"></div>
-  <div id="playerHand"></div>
-  <div id="turnTimer">
-    <div id="timerBar"></div>
-  </div>
-</div>
-<script src="js/game.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyWu4TI4PIRXfeb7yqt0WIGClgu10IjkM",
+      authDomain: "kylita-f2923.firebaseapp.com",
+      databaseURL: "https://kylita-f2923-default-rtdb.firebaseio.com",
+      projectId: "kylita-f2923",
+      storageBucket: "kylita-f2923.firebasestorage.app",
+      messagingSenderId: "431823530994",
+      appId: "1:431823530994:web:88a07e633751686e5ad96b",
+      measurementId: "G-F4LLNWQJ16"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Récup info joueur
+    const pseudo = localStorage.getItem("pseudo");
+    const roomCode = localStorage.getItem("roomCode");
+    const isHost = localStorage.getItem("isHost") === "true";
+
+    document.getElementById("roomCode").innerText = "Code: " + roomCode;
+
+    const center = document.getElementById("center");
+    const handDiv = document.getElementById("hand");
+    const playersDiv = document.getElementById("players");
+    const actualImg = document.getElementById("actual");
+
+    // Définition des cartes
+    const colors = ["Rouge","Bleu","Jaune","Vert"];
+    const deck = [];
+    colors.forEach(c=>{
+      for(let i=1;i<=4;i++) deck.push({type:c,num:i});
+      deck.push({type:c,num:"MIX"});
+    });
+    deck.push({type:"ALL",num:"Changement"});
+    deck.push({type:"ALL",num:"Reset"});
+
+    function getCardImage(card){
+      if(card.num==="MIX") return "mix.png";
+      if(card.num==="Changement") return "colorswitch.png";
+      if(card.num==="Reset") return "reset.png";
+      if(card.type==="Rouge") return "red.png";
+      if(card.type==="Bleu") return "blue.png";
+      if(card.type==="Jaune") return "yellow.png";
+      if(card.type==="Vert") return "green.png";
+      return "card.png";
+    }
+
+    // Donner 5 cartes aléatoires
+    function getRandomHand(){
+      let hand=[];
+      for(let i=0;i<5;i++){
+        hand.push(deck[Math.floor(Math.random()*deck.length)]);
+      }
+      return hand;
+    }
+
+    // Afficher main du joueur
+    function renderHand(hand){
+      handDiv.innerHTML="";
+      hand.forEach((card,i)=>{
+        let div=document.createElement("div");
+        div.className="card";
+        div.style.backgroundImage=`url(${getCardImage(card)})`;
+        div.style.backgroundSize="cover";
+        if(typeof card.num==="number"){
+          let span=document.createElement("span");
+          span.innerText=card.num;
+          span.style.color="white";
+          div.appendChild(span);
+        }
+        div.onclick=()=>playCard(i,card);
+        handDiv.appendChild(div);
+      });
+    }
+
+    // Lancer la partie si host
+    if(isHost){
+      const initialState={
+        started:true,
+        turn:0,
+        players:{},
+        actual:null
+      };
+      db.ref("rooms/"+roomCode).once("value",snap=>{
+        let val=snap.val();
+        let players=val.players;
+        for(let uid in players){
+          players[uid].hand=getRandomHand();
+        }
+        initialState.players=players;
+        db.ref("rooms/"+roomCode).update(initialState);
+      });
+    }
+
+    // Ecoute état partie
+    db.ref("rooms/"+roomCode).on("value",snap=>{
+      if(!snap.exists()) return;
+      const data=snap.val();
+      if(!data.started) return;
+
+      // Affichage joueurs
+      playersDiv.innerHTML="";
+      const uids=Object.keys(data.players);
+      const radius=200;
+      uids.forEach((uid,idx)=>{
+        let p=data.players[uid];
+        let angle=(idx/uids.length)*2*Math.PI;
+        let x=window.innerWidth/2 + Math.cos(angle)*radius;
+        let y=window.innerHeight/2 + Math.sin(angle)*radius;
+        let div=document.createElement("div");
+        div.className="player";
+        div.style.left=(x-40)+"px";
+        div.style.top=(y-40)+"px";
+        div.innerHTML=`<b>${p.pseudo}</b>`;
+        let cardsDiv=document.createElement("div");
+        cardsDiv.className="cards";
+        for(let i=0;i<p.hand.length;i++){
+          let img=document.createElement("img");
+          img.src="card.png";
+          cardsDiv.appendChild(img);
+        }
+        div.appendChild(cardsDiv);
+        // Timer
+        if(uids[data.turn]===uid){
+          let timer=document.createElement("div");
+          timer.className="timerBar";
+          timer.innerHTML="<div class='timerFill' id='timerFill'></div>";
+          div.appendChild(timer);
+        }
+        playersDiv.appendChild(div);
+      });
+
+      // Afficher actual
+      if(data.actual){
+        actualImg.src=getCardImage(data.actual);
+      }
+
+      // Afficher ma main
+      if(data.players[pseudo]){
+        renderHand(data.players[pseudo].hand);
+      }
+    });
+
+    function playCard(index,card){
+      db.ref("rooms/"+roomCode).once("value",snap=>{
+        let data=snap.val();
+        let turnUid=Object.keys(data.players)[data.turn];
+        if(turnUid!==pseudo) return; // pas notre tour
+
+        // TODO: Vérifier si la carte est valide
+        data.actual=card;
+        data.players[pseudo].hand.splice(index,1);
+
+        // Victoire ?
+        if(data.players[pseudo].hand.length===0){
+          document.getElementById("winnerText").innerText=pseudo+" a gagné !";
+          document.getElementById("winnerScreen").style.display="flex";
+        }
+
+        // prochain joueur
+        data.turn=(data.turn+1)%Object.keys(data.players).length;
+        db.ref("rooms/"+roomCode).set(data);
+      });
+    }
+
+    function restart(){
+      if(isHost){
+        db.ref("rooms/"+roomCode+"/started").set(false);
+        window.location.href="menu.html";
+      }
+    }
+    function exit(){
+      window.location.href="menu.html";
+    }
+  </script>
 </body>
 </html>
