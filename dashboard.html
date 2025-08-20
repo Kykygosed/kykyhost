@@ -68,148 +68,140 @@
     </div>
   </main>
 
-  <script>
-    // 🔥 Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBPq6Wfxzq02MfK69BFxHm9_FUjDGTmAcw",
-      authDomain: "kykychat-24c7f.firebaseapp.com",
-      databaseURL: "https://kykychat-24c7f-default-rtdb.firebaseio.com",
-      projectId: "kykychat-24c7f",
-      storageBucket: "kykychat-24c7f.firebasestorage.app",
-      messagingSenderId: "342562811927",
-      appId: "1:342562811927:web:0fed1e1f511c4fddcfec52"
-    };
+ <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBPq6Wfxzq02MfK69BFxHm9_FUjDGTmAcw",
+    authDomain: "kykychat-24c7f.firebaseapp.com",
+    databaseURL: "https://kykychat-24c7f-default-rtdb.firebaseio.com",
+    projectId: "kykychat-24c7f",
+    storageBucket: "kykychat-24c7f.firebasestorage.app",
+    messagingSenderId: "342562811927",
+    appId: "1:342562811927:web:0fed1e1f511c4fddcfec52"
+  };
 
-    // Init Firebase (compat)
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    let currentUser = null;
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+  let currentUser = null;
 
-    // Auth guard
-    auth.onAuthStateChanged(user => {
-      if (!user) { window.location.href = "index.html"; return; }
-      currentUser = user;
-      subscribeBots();
+  auth.onAuthStateChanged(user => {
+    if(!user){ window.location.href = "index.html"; return; }
+    currentUser = user;
+    subscribeBots();
+  });
+
+  function goHome(){ window.location.href = "dashboard.html"; }
+
+  function subscribeBots(){
+    const ref = db.ref("users/" + currentUser.uid + "/bots");
+    ref.on("value", snap => renderBots(snap.val() || {}));
+  }
+
+  function renderBots(bots){
+    const container = document.getElementById("botsList");
+    const empty = document.getElementById("emptyState");
+    container.innerHTML = "";
+
+    const ids = Object.keys(bots);
+    empty.style.display = ids.length ? "none" : "block";
+
+    ids.sort((a,b)=> (bots[a].createdAt||"").localeCompare(bots[b].createdAt||""));
+
+    ids.forEach(botId => {
+      const bot = bots[botId];
+      const isOnline = !!bot.status;
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="name">${escapeHtml(bot.name || botId)}</div>
+        <div class="status">
+          <span class="dot ${isOnline ? 'on':'off'}"></span>
+          ${isOnline ? 'En ligne' : 'Hors ligne'}
+        </div>
+        <div class="row">
+          ${isOnline
+            ? `<button class="btn secondary" onclick="stopBot('${botId}')">Arrêter</button>`
+            : `<button class="btn primary" onclick="startBot('${botId}')">Démarrer</button>`
+          }
+          <button class="btn primary" onclick="editBot('${botId}')">Éditer</button>
+        </div>
+        <div class="row">
+          <button class="btn secondary" onclick="viewBot('${botId}')">Voir</button>
+          <button class="btn danger" onclick="deleteBot('${botId}')">Supprimer</button>
+        </div>
+      `;
+      container.appendChild(card);
     });
 
-    // Navigation
-    function goHome(){ window.location.href = "dashboard.html"; }
+    // Vérification admin
+    db.ref(`users/${currentUser.uid}/admin`).once("value").then(snap => {
+      if(snap.val() === true){
+        renderAdminBots(container);
+      }
+    });
+  }
 
-    // Subscribe to bots list
-    function subscribeBots(){
-      const ref = db.ref("users/" + currentUser.uid + "/bots");
-      ref.on("value", (snap) => renderBots(snap.val() || {}));
-    }
+  function renderAdminBots(container){
+    const title = document.createElement("h2");
+    title.textContent = "Admin - Tous les bots";
+    title.style.marginTop = "24px";
+    container.appendChild(title);
 
-    // Render user's bots
-function renderBots(bots){
-  const container = document.getElementById("botsList");
-  const empty = document.getElementById("emptyState");
-  container.innerHTML = "";
+    db.ref("users").once("value").then(snap => {
+      const allUsers = snap.val();
+      for(const uid in allUsers){
+        const user = allUsers[uid];
+        if(!user.bots) continue;
 
-  const ids = Object.keys(bots);
-  empty.style.display = ids.length ? "none" : "block";
-
-  ids.sort((a,b)=> (bots[a].createdAt||"").localeCompare(bots[b].createdAt||""));
-
-  ids.forEach(botId => {
-    const bot = bots[botId];
-    const isOnline = !!bot.status;
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="name">${escapeHtml(bot.name || botId)}</div>
-      <div class="status">
-        <span class="dot ${isOnline ? 'on':'off'}"></span>
-        ${isOnline ? 'En ligne' : 'Hors ligne'}
-      </div>
-      <div class="row">
-        ${isOnline
-          ? `<button class="btn secondary" onclick="stopBot('${botId}')">Arrêter</button>`
-          : `<button class="btn primary" onclick="startBot('${botId}')">Démarrer</button>`
+        for(const botId in user.bots){
+          const bot = user.bots[botId];
+          const isOnline = !!bot.status;
+          const ownerEmail = user.email || uid;
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="name">${escapeHtml(bot.name || botId)} (Utilisateur: ${escapeHtml(ownerEmail)})</div>
+            <div class="status">
+              <span class="dot ${isOnline ? 'on':'off'}"></span>
+              ${isOnline ? 'En ligne' : 'Hors ligne'}
+            </div>
+            <div class="row">
+              ${isOnline
+                ? `<button class="btn secondary" onclick="stopBotAdmin('${uid}','${botId}')">Arrêter</button>`
+                : `<button class="btn primary" onclick="startBotAdmin('${uid}','${botId}')">Démarrer</button>`
+              }
+              <button class="btn primary" onclick="editBotAdmin('${uid}','${botId}')">Éditer</button>
+            </div>
+          `;
+          container.appendChild(card);
         }
-        <button class="btn primary" onclick="editBot('${botId}')">Éditer</button>
-      </div>
-      <div class="row">
-        <button class="btn secondary" onclick="viewBot('${botId}')">Voir</button>
-        <button class="btn danger" onclick="deleteBot('${botId}')">Supprimer</button>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-
-  // Vérifier si l'utilisateur a le droit admin dans la DB
-  db.ref(`users/${currentUser.uid}/admin`).once("value").then(snap => {
-    if(snap.val() === true){
-      renderAdminBots(container);
-    }
-  });
-}
-
-    // Create bot
-    document.getElementById("createBotBtn").addEventListener("click", () => {
-      const name = prompt("Nom du bot :");
-      if (!name) return;
-
-      // (Optionnel) token pour simulation — n’utilise pas un vrai token ici
-      const token = prompt("Token (optionnel - simulation) :") || "";
-
-      const botId = "bot_" + Date.now();
-      const defaultMainPy =
-`# main.py — Simulation hébergeur (frontend)
-# ⚠️ Exécution réelle à faire côté serveur (Node.js/Python), pas dans le navigateur.
-print("Bot prêt (simulation).")
-# Exemple discord.py (pour référence seulement) :
-# import discord
-# from discord.ext import commands
-# bot = commands.Bot(command_prefix="!")
-# @bot.event
-# async def on_ready():
-#     print("Connecté en tant que", bot.user)
-# bot.run("TON_TOKEN_ICI")`;
-
-      const data = {
-        name,
-        status: false, // offline
-        createdAt: new Date().toISOString(),
-        token,         // ⚠️ simulation uniquement
-        files: { "main_py": defaultMainPy }
-      };
-
-      db.ref(`users/${currentUser.uid}/bots/${botId}`).set(data);
+      }
     });
+  }
 
-    // Start/Stop (simulation)
-    function startBot(botId){
-      db.ref(`users/${currentUser.uid}/bots/${botId}/status`).set(true);
-    }
-    function stopBot(botId){
-      db.ref(`users/${currentUser.uid}/bots/${botId}/status`).set(false);
-    }
+  function startBot(botId){ db.ref(`users/${currentUser.uid}/bots/${botId}/status`).set(true); }
+  function stopBot(botId){ db.ref(`users/${currentUser.uid}/bots/${botId}/status`).set(false); }
+  function editBot(botId){ db.ref(`users/${currentUser.uid}/noweditingBot`).set(botId).then(()=>{ window.location.href="bot-editing.html"; }); }
 
-    // Edit → set noweditingBot + redirect
-    function editBot(botId){
-      db.ref(`users/${currentUser.uid}/noweditingBot`).set(botId).then(()=>{
-        window.location.href = "bot-editing.html";
-      });
-    }
+  function startBotAdmin(uid, botId){ db.ref(`users/${uid}/bots/${botId}/status`).set(true); }
+  function stopBotAdmin(uid, botId){ db.ref(`users/${uid}/bots/${botId}/status`).set(false); }
+  function editBotAdmin(uid, botId){ db.ref(`users/${uid}/noweditingBot`).set(botId).then(()=>{ window.location.href="bot-editing.html"; }); }
 
-    // View (placeholder)
-    function viewBot(botId){
-      alert("Voir : non implémenté pour l’instant (placeholder).");
-    }
+  document.getElementById("createBotBtn").addEventListener("click", ()=>{
+    const name = prompt("Nom du bot :");
+    if(!name) return;
+    const token = prompt("Token (optionnel - simulation) :") || "";
+    const botId = "bot_" + Date.now();
+    const defaultMainPy = `# main.py — Simulation hébergeur (frontend)\nprint("Bot prêt (simulation).")`;
+    const data = { name, status:false, createdAt:new Date().toISOString(), token, files:{ "main_py": defaultMainPy } };
+    db.ref(`users/${currentUser.uid}/bots/${botId}`).set(data);
+  });
 
-    // Delete
-    function deleteBot(botId){
-      if (!confirm("Supprimer ce bot ?")) return;
-      db.ref(`users/${currentUser.uid}/bots/${botId}`).remove();
-    }
+  function viewBot(botId){ alert("Voir : non implémenté."); }
+  function deleteBot(botId){ if(confirm("Supprimer ce bot ?")) db.ref(`users/${currentUser.uid}/bots/${botId}`).remove(); }
 
-    // Utils
-    function escapeHtml(str){
-      return String(str).replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
-    }
-  </script>
+  function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s])); }
+</script>
+
 </body>
 </html>
