@@ -345,7 +345,9 @@ firebase.auth().onAuthStateChanged(user=>{
     currentBot = snap.val();
     if(!currentBot) return alert("Aucun bot en cours d'édition !");
     loadFiles();
-    updateStatus();
+    attachStatusListener();   // <-- statut en temps réel
+    attachLogsListener();     // <-- logs en temps réel
+    updateBotSize();
   });
 });
 
@@ -587,10 +589,8 @@ function addLog(msg, color="#0f0"){
   logsBox.scrollTop = logsBox.scrollHeight;
 }
 
-function updateStatus(){
+function attachStatusListener(){
     const statusRef = db.ref(`users/${currentUser}/bots/${currentBot}/status`);
-    const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
-    
     statusRef.on("value", snap => {
         const status = snap.val();
         if(status === "true"){
@@ -605,12 +605,7 @@ function updateStatus(){
         } else if(status === "offline"){
             statusText.innerText = "Arrêté";
             statusDot.style.background = "red";
-            // Effacer logs côté UI
             logsBox.innerHTML = "";
-            // Supprimer logs dans Firebase
-            logsRef.remove().then(()=> {
-                console.log("Logs supprimés car bot offline");
-            });
         }
     });
 }
@@ -662,17 +657,18 @@ function stopBotUI(){
   });
 }
 
-function loadLogs(){
-  logsBox.innerHTML="";
-  updateStatus();
-  addLog("Chargement des logs...");
-  db.ref(`users/${currentUser}/bots/${currentBot}/logs`).once("value").then(snap=>{
-    const logs = snap.val()||{};
-    for(let key in logs){
-      addLog(logs[key]);
-    }
-  });
+function attachLogsListener(){
+    const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
+    logsRef.on("value", snap => {
+        const logs = snap.val() || {};
+        logsBox.innerHTML = "";
+        const sortedKeys = Object.keys(logs).sort((a,b)=>parseInt(a)-parseInt(b));
+        sortedKeys.forEach(key => {
+            addLog(logs[key]);
+        });
+    });
 }
+
 
 function calculateSize(obj) {
   let total = 0;
