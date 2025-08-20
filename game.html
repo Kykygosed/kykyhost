@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KykyUNO - Partie</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="gameBoard">
+  <div id="topBar">
+    <span>Code de partie : <span id="gameCode"></span></span>
+  </div>
+  <div id="centralDeck">
+    <img id="draft" src="images/draft.png" alt="Piocher">
+    <img id="actual" src="images/actual.png" alt="Défausse">
+  </div>
+  <div id="playersCircle"></div>
+  <div id="playerHand"></div>
+  <div id="turnTimer">
+    <div id="timerBar"></div>
+  </div>
+</div>
+<script src="js/game.js"></script>
+</body>
+</html>
