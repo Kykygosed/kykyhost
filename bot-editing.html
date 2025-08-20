@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Édition du bot</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; }
+    .sidebar { width: 220px; background: #1e1e2f; color: white; display: flex; flex-direction: column; }
+    .sidebar img { width: 120px; margin: 20px auto; }
+    .sidebar button { background: none; border: none; color: white; padding: 15px; text-align: left; cursor: pointer; }
+    .sidebar button.active { background: #2e2e4f; }
+    .sidebar .quit { margin-top: auto; background: #c62828; }
+    .main { flex: 1; padding: 20px; overflow-y: auto; }
+    .file-list { margin-top: 15px; }
+    .file-item { padding: 8px; border-bottom: 1px solid #ddd; cursor: pointer; }
+    .file-item:hover { background: #f4f4f4; }
+    .editor { margin-top: 20px; display: none; }
+    .editor textarea { width: 100%; height: 400px; font-family: monospace; padding: 10px; }
+    .editor button { margin-top: 10px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <img src="logo.png" alt="Logo">
+    <button id="filesBtn" class="active">📂 Fichiers</button>
+    <button id="logsBtn">📝 Logs</button>
+    <button class="quit" onclick="window.location='dashboard.html'">Quitter</button>
+  </div>
+
+  <div class="main">
+    <h2>Édition des fichiers</h2>
+    <div id="filesSection">
+      <button onclick="createFile()">+ Nouveau fichier</button>
+      <input type="file" id="uploadInput" accept=".py,.txt,text/*" onchange="uploadFile(event)">
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="editor" id="editor">
+      <h3 id="editorFilename"></h3>
+      <textarea id="editorContent"></textarea>
+      <button onclick="saveFile()">💾 Enregistrer</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBPq6Wfxzq02MfK69BFxHm9_FUjDGTmAcw",
+      authDomain: "kykychat-24c7f.firebaseapp.com",
+      databaseURL: "https://kykychat-24c7f-default-rtdb.firebaseio.com",
+      projectId: "kykychat-24c7f",
+      storageBucket: "kykychat-24c7f.firebasestorage.app",
+      messagingSenderId: "342562811927",
+      appId: "1:342562811927:web:0fed1e1f511c4fddcfec52"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    let currentUser, currentBot, currentFile;
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) return window.location = "index.html";
+      currentUser = user.uid;
+
+      firebase.database().ref(`users/${currentUser}/nowediting`).once("value").then(snap => {
+        currentBot = snap.val();
+        if (!currentBot) return alert("Aucun bot en cours d'édition !");
+        loadFiles();
+      });
+    });
+
+    function formatFilename(name, toDisplay = true) {
+      if (toDisplay) return name.replace(/_/g, ".");
+      else return name.replace(/\./g, "_");
+    }
+
+    function loadFiles() {
+      firebase.database().ref(`users/${currentUser}/bots/${currentBot}/files`).on("value", snap => {
+        const fileList = document.getElementById("fileList");
+        fileList.innerHTML = "";
+        snap.forEach(file => {
+          let displayName = formatFilename(file.key, true);
+          let div = document.createElement("div");
+          div.className = "file-item";
+          div.innerText = displayName;
+          div.onclick = () => openFile(file.key);
+          fileList.appendChild(div);
+        });
+      });
+    }
+
+    function createFile() {
+      let name = prompt("Nom du fichier (ex: test.py)");
+      if (!name) return;
+      let dbName = formatFilename(name, false);
+      firebase.database().ref(`users/${currentUser}/bots/${currentBot}/files/${dbName}`).set(" ");
+    }
+
+    function uploadFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = function(ev) {
+        let content = ev.target.result.replace(/\n/g, "{%hostjump%}");
+        let dbName = formatFilename(file.name, false);
+        firebase.database().ref(`users/${currentUser}/bots/${currentBot}/files/${dbName}`).set(content);
+      };
+      reader.readAsText(file);
+    }
+
+    function openFile(dbName) {
+      currentFile = dbName;
+      firebase.database().ref(`users/${currentUser}/bots/${currentBot}/files/${dbName}`).once("value").then(snap => {
+        let content = snap.val() || "";
+        content = content.replace(/{%hostjump%}/g, "\n");
+        document.getElementById("editorFilename").innerText = formatFilename(dbName, true);
+        document.getElementById("editorContent").value = content;
+        document.getElementById("editor").style.display = "block";
+      });
+    }
+
+    function saveFile() {
+      let content = document.getElementById("editorContent").value.replace(/\n/g, "{%hostjump%}");
+      firebase.database().ref(`users/${currentUser}/bots/${currentBot}/files/${currentFile}`).set(content);
+      alert("Fichier sauvegardé !");
+    }
+  </script>
+</body>
+</html>
