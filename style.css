@@ -1,0 +1,109 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #2c3e50;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+#menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#menu input, #menu button {
+  padding: 10px;
+  font-size: 16px;
+  margin: 5px;
+}
+
+#gameBoard {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#centralDeck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 20px;
+}
+
+#centralDeck img {
+  height: 120px;
+  cursor: pointer;
+}
+
+#playersCircle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.player {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.playerCards {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+#playerHand {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.playerHandCard {
+  width: 60px;
+  height: 90px;
+  border-radius: 8px;
+  background-color: gray;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+#turnTimer {
+  position: absolute;
+  bottom: 110px;
+  width: 80%;
+  left: 10%;
+  height: 20px;
+  border: 2px solid white;
+}
+
+#timerBar {
+  height: 100%;
+  width: 100%;
+  background-color: green;
+  transition: width 1s linear;
+}
+
+#topBar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 18px;
+}
