@@ -329,23 +329,56 @@ logsTab.onclick = ()=>{
 };
 
 // Logs et contrôle bot
-function addLog(msg,color="#0f0"){
+function addLog(msg, color="#0f0"){
   const line = document.createElement("div");
   line.innerText = msg;
-  line.style.color=color;
+  line.style.color = color;
   logsBox.appendChild(line);
   logsBox.scrollTop = logsBox.scrollHeight;
 }
 
 function updateStatus(){
-  db.ref(`users/${currentUser}/bots/${currentBot}/status`).once("value").then(snap=>{
+  db.ref(`users/${currentUser}/bots/${currentBot}/status`).on("value", snap => {
     const status = snap.val();
-    if(status==="true"){statusText.innerText="Démarrage..."; statusDot.style.background="orange";}
-    else if(status==="online"){statusText.innerText="En ligne"; statusDot.style.background="green";}
-    else if(status==="false"){statusText.innerText="Arrêt..."; statusDot.style.background="orange";}
-    else if(status==="offline"){statusText.innerText="Arrêté"; statusDot.style.background="red";}
+    if(status === "true"){
+      statusText.innerText = "Démarrage...";
+      statusDot.style.background = "orange";
+    } else if(status === "online"){
+      statusText.innerText = "En ligne";
+      statusDot.style.background = "green";
+    } else if(status === "false"){
+      statusText.innerText = "Arrêt...";
+      statusDot.style.background = "orange";
+    } else if(status === "offline"){
+      statusText.innerText = "Arrêté";
+      statusDot.style.background = "red";
+      // Effacer tous les logs si le bot est offline
+      logsBox.innerHTML = "";
+    }
   });
 }
+
+function loadLogs(){
+  logsBox.innerHTML = "";
+  addLog("Chargement des logs...");
+
+  const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
+  
+  // On récupère les clés (timestamps) et on trie
+  logsRef.once("value").then(snap => {
+    const logs = snap.val() || {};
+    const sortedKeys = Object.keys(logs).sort((a, b) => parseInt(a) - parseInt(b));
+    sortedKeys.forEach(key => {
+      addLog(logs[key]);
+    });
+  });
+
+  // On écoute aussi les nouveaux logs en temps réel
+  logsRef.on("child_added", snap => {
+    addLog(snap.val());
+  });
+}
+
 
 function startBot(){
   db.ref(`users/${currentUser}/bots/${currentBot}`).update({status:"true"}).then(()=>{
