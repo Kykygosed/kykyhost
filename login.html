@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KykyUNO - Menu</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="menu">
+  <h1>KykyUNO</h1>
+  <input id="pseudo" placeholder="Pseudo"/>
+  <div id="menuButtons">
+    <button onclick="hostGame()">HOST UNE PARTIE</button>
+    <input id="joinCode" placeholder="Code de la partie"/>
+    <button onclick="joinGame()">REJOINDRE UNE PARTIE</button>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
