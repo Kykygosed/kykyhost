@@ -96,7 +96,7 @@ let editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.session.setMode("ace/mode/text");
 
-// Sidebar tabs
+// Sidebar tabs & UI elements
 const filesTab = document.getElementById("files-tab");
 const logsTab = document.getElementById("logs-tab");
 const fileListEl = document.getElementById("fileList");
@@ -115,6 +115,7 @@ firebase.auth().onAuthStateChanged(user=>{
     currentBot = snap.val();
     if(!currentBot) return alert("Aucun bot en cours d'édition !");
     loadFiles();
+    updateStatus();
   });
 });
 
@@ -140,7 +141,7 @@ function copyNode(sourceRef, targetRef){
   });
 }
 
-// Créer fichier
+// Créer fichier / dossier / upload
 function createFile(){
   let name = prompt("Nom du fichier (ex: test.py)");
   if(!name) return;
@@ -148,16 +149,12 @@ function createFile(){
   getRef().child(dbName).set(" ");
   loadFiles();
 }
-
-// Créer dossier
 function createDirectory(){
   let name = prompt("Nom du dossier");
   if(!name) return;
   getRef().child(name).set({});
   loadFiles();
 }
-
-// Upload fichier texte
 function uploadFile(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -216,14 +213,12 @@ function showContextMenu(x,y,f){
 }
 document.addEventListener("click",()=>{contextMenu.style.display="none";});
 
-// Supprimer
+// Supprimer / renommer
 function deleteItem(){
   if(!confirm("Supprimer cet élément ?")) return;
   getRef().child(currentFile).remove();
   loadFiles();
 }
-
-// Renommer
 function renameItem(){
   let newName = prompt("Nouveau nom :",currentFile);
   if(!newName) return;
@@ -369,6 +364,7 @@ function loadLogs(){
 // Initial load
 loadFiles();
 </script>
+
 
 </body>
 </html>
