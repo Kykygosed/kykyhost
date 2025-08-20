@@ -107,3 +107,12 @@ body {
   left: 10px;
   font-size: 18px;
 }
+.playerHandCard.playing {
+  transition: all 0.5s ease-in-out;
+  z-index: 100;
+}
+
+#centralDeck img.played {
+  transform: scale(1.2);
+  transition: transform 0.5s;
+}
