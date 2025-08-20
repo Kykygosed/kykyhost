@@ -624,21 +624,17 @@ function loadLogs(){
 
     const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
 
-
-    if (logsInterval) clearInterval(logsInterval);
-
-
-    logsInterval = setInterval(() => {
-        logsRef.once("value").then(snap => {
-            const logs = snap.val() || {};
-            logsBox.innerHTML = ""; 
-            const sortedKeys = Object.keys(logs).sort((a, b) => parseInt(a) - parseInt(b));
-            sortedKeys.forEach(key => {
-                addLog(logs[key]);
-            });
+    // Écoute en temps réel
+    logsRef.on("value", snap => {
+        const logs = snap.val() || {};
+        logsBox.innerHTML = ""; // vide avant d'afficher
+        const sortedKeys = Object.keys(logs).sort((a,b) => parseInt(a)-parseInt(b));
+        sortedKeys.forEach(key => {
+            addLog(logs[key]);
         });
-    }, 1000);
+    });
 }
+
 
 
 
