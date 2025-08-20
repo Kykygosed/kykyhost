@@ -26,14 +26,28 @@
       width: 320px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.4);
     }
+    label {
+      display: block;
+      text-align: center;
+      color: #fff;
+      margin-top: 10px;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
     input {
-      width: 100%;
+      display: block;
+      width: 85%;
       padding: 12px;
-      margin: 10px 0;
+      margin: 10px auto;
       border: none;
       border-radius: 8px;
       background: rgba(255,255,255,0.15);
       color: #fff;
+      text-align: center;
+    }
+    input::placeholder {
+      color: #ccc;
+      text-align: center;
     }
     button {
       width: 100%;
@@ -60,15 +74,18 @@
 <body>
   <div class="container">
     <h2 id="form-title">Connexion</h2>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Mot de passe">
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="Votre adresse email">
+    <label for="password">Mot de passe</label>
+    <input type="password" id="password" placeholder="Votre mot de passe">
     <button id="submitBtn">Se connecter</button>
-    <p class="toggle" onclick="toggleForm()">Pas encore de compte ? Inscription</p>
+    <p class="toggle">Pas encore de compte ? Inscription</p>
     <p id="message"></p>
   </div>
 
   <script>
-    // Config Firebase
+    let isLogin = true
+
     const firebaseConfig = {
       apiKey: "AIzaSyBPq6Wfxzq02MfK69BFxHm9_FUjDGTmAcw",
       authDomain: "kykychat-24c7f.firebaseapp.com",
@@ -78,53 +95,62 @@
       messagingSenderId: "342562811927",
       appId: "1:342562811927:web:0fed1e1f511c4fddcfec52"
     };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
 
-    let isLogin = true;
+    document.addEventListener("DOMContentLoaded", () => {
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.database();
 
-    function toggleForm() {
-      isLogin = !isLogin;
-      document.getElementById("form-title").innerText = isLogin ? "Connexion" : "Inscription";
-      document.getElementById("submitBtn").innerText = isLogin ? "Se connecter" : "S'inscrire";
-      document.querySelector(".toggle").innerText = isLogin ? "Pas encore de compte ? Inscription" : "Déjà un compte ? Connexion";
-      document.getElementById("message").innerText = "";
-    }
-
-    document.getElementById("submitBtn").addEventListener("click", () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const msg = document.getElementById("message");
-
-      if (isLogin) {
-        auth.signInWithEmailAndPassword(email, password)
-          .then(() => {
-            msg.innerText = "✅ Connecté avec succès !";
-            msg.className = "success";
-            setTimeout(() => window.location.href = "dashboard.html", 1000);
-          })
-          .catch(err => {
-            msg.innerText = "❌ " + err.message;
-            msg.className = "error";
-          });
-      } else {
-        auth.createUserWithEmailAndPassword(email, password)
-          .then(cred => {
-            db.ref("users/" + cred.user.uid).set({
-              email: email,
-              createdAt: new Date().toISOString(),
-              quota: 1
-            });
-            msg.innerText = "✅ Compte créé avec succès !";
-            msg.className = "success";
-            setTimeout(() => window.location.href = "dashboard.html", 1000);
-          })
-          .catch(err => {
-            msg.innerText = "❌ " + err.message;
-            msg.className = "error";
-          });
+      function toggleForm() {
+        isLogin = !isLogin;
+        document.getElementById("form-title").innerText = isLogin ? "Connexion" : "Inscription";
+        document.getElementById("submitBtn").innerText = isLogin ? "Se connecter" : "S'inscrire";
+        document.querySelector(".toggle").innerText = isLogin ? "Pas encore de compte ? Inscription" : "Déjà un compte ? Connexion";
+        document.getElementById("message").innerText = "";
       }
+
+      document.querySelector(".toggle").addEventListener("click", toggleForm);
+
+      document.getElementById("submitBtn").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const msg = document.getElementById("message");
+
+        if (isLogin) {
+          auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+              msg.innerText = "✅ Connecté avec succès !";
+              msg.className = "success";
+              setTimeout(() => window.location.href = "dashboard.html", 1000);
+            })
+            .catch(err => {
+              msg.innerText = "❌ " + err.message;
+              msg.className = "error";
+            });
+        } else {
+          auth.createUserWithEmailAndPassword(email, password)
+            .then(cred => {
+              db.ref("users/" + cred.user.uid).set({
+                email: email,
+                createdAt: new Date().toISOString(),
+                quota: 1
+              });
+              msg.innerText = "✅ Compte créé avec succès !";
+              msg.className = "success";
+              setTimeout(() => window.location.href = "dashboard.html", 1000);
+            })
+            .catch(err => {
+              msg.innerText = "❌ " + err.message;
+              msg.className = "error";
+            });
+        }
+      });
+
+      console.assert(isLogin === true, "Test: l'état initial doit être Connexion");
+      toggleForm();
+      console.assert(isLogin === false, "Test: toggleForm doit inverser l'état");
+      toggleForm();
+      console.assert(isLogin === true, "Test: toggleForm doit revenir à Connexion");
     });
   </script>
 </body>
