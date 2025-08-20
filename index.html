@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Connexion / Inscription</title>
-  <!-- Firebase compat SDK (v9 mais en mode v8 pour le navigateur) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -79,8 +78,6 @@
       messagingSenderId: "342562811927",
       appId: "1:342562811927:web:0fed1e1f511c4fddcfec52"
     };
-
-    // Init
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
