@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Push‑To‑Talk • Firebase + WebRTC</title>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --card: #121826;
+      --muted: #8aa0b3;
+      --text: #e9f0f7;
+      --accent: #5cc8ff;
+      --accent-2: #8ef6a0;
+      --danger: #ff6b6b;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -20%, #1c2540 0%, transparent 60%), radial-gradient(800px 400px at -20% 120%, #142135 0%, transparent 60%), var(--bg);
+      color: var(--text); display: grid; place-items: center;
+    }
+    .wrap { width: min(960px, 92vw); }
+    header { display:flex; align-items:center; justify-content:space-between; gap: 12px; }
+    .pill { font-size: 12px; color: #0c1625; background: var(--accent); padding: 6px 10px; border-radius: 999px; font-weight: 700; letter-spacing: .3px; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.0)); border: 1px solid rgba(255,255,255,.08); border-radius: 18px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+    .grid { display:grid; grid-template-columns: 1fr 320px; gap: 16px; }
+    .left, .right { min-height: 320px; }
+
+    .ptt {
+      width: 100%; aspect-ratio: 1/1; border-radius: 26px; border: 1px solid rgba(255,255,255,.08);
+      background: radial-gradient(120% 120% at 50% 10%, rgba(92,200,255,.18), rgba(92,200,255,.10)), #0f1726;
+      display:grid; place-items:center; cursor: pointer; user-select:none;
+      transition: transform .08s ease, box-shadow .08s ease, background .2s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 12px 28px rgba(0,0,0,.45);
+    }
+    .ptt:active { transform: translateY(1px) scale(0.995); }
+    .ptt.held { background: radial-gradient(120% 120% at 50% 10%, rgba(142,246,160,.22), rgba(142,246,160,.12)), #0f1f16; box-shadow: 0 0 0 2px rgba(142,246,160,.25), 0 12px 28px rgba(0,0,0,.6) }
+    .ptt.locked { background: radial-gradient(120% 120% at 50% 10%, rgba(255,107,107,.18), rgba(255,107,107,.10)), #261016; }
+    .ptt .label { text-align:center; line-height:1.15; }
+    .ptt .big { font-size: clamp(22px, 4.2vw, 44px); font-weight: 800; letter-spacing: .3px; }
+    .ptt .small { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+    .status { display:flex; align-items:center; gap: 8px; font-size: 14px; color: var(--muted); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #999; box-shadow: 0 0 0 3px rgba(255,255,255,.06) inset; }
+    .dot.idle { background:#9aa6b2; }
+    .dot.live { background: var(--accent-2); }
+    .dot.busy { background: var(--danger); }
+
+    .list { display:flex; flex-direction:column; gap: 8px; }
+    .row { display:flex; align-items:center; justify-content:space-between; background:#0c1423; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.06); }
+    .row .name { font-weight:700 }
+    .row .me { color: var(--accent) }
+    .row small { color: var(--muted) }
+
+    .modal { position: fixed; inset: 0; display:grid; place-items:center; backdrop-filter: blur(6px); background: rgba(5,10,20,.55); }
+    .modal .box { width:min(520px,92vw); background:#0e1526; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding: 20px; }
+    .modal h2 { margin-top:0 }
+    .input { width:100%; padding:12px 14px; border-radius:10px; background:#0a1220; border:1px solid rgba(255,255,255,.10); color:var(--text); font-size:16px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; padding:10px 14px; border-radius:12px; font-weight:800; border:1px solid rgba(255,255,255,.10); background:#0b162a; color:var(--text); }
+    .btn.primary { background: linear-gradient(180deg, rgba(92,200,255,.18), rgba(92,200,255,.05)); border-color: rgba(92,200,255,.35); }
+    .muted { color: var(--muted) }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace }
+    .footer { margin-top: 10px; font-size: 12px; color: var(--muted) }
+    audio { display:none }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="pill">Room: <span id="roomName">global</span></div>
+        <h1 style="margin:.4rem 0 0 0">Push‑To‑Talk (Firebase + WebRTC)</h1>
+        <div class="status" id="globalStatus">
+          <span class="dot idle" id="stateDot"></span>
+          <span id="stateText">En attente…</span>
+        </div>
+      </div>
+      <div>
+        <div class="pill" id="meTag">–</div>
+      </div>
+    </header>
+
+    <div class="grid" style="margin-top:16px">
+      <section class="left card">
+        <button id="ptt" class="ptt" disabled>
+          <div class="label">
+            <div class="big" id="pttTitle">Appuyer pour parler</div>
+            <div class="small" id="pttHint">Personne ne parle</div>
+          </div>
+        </button>
+        <div class="footer">
+          <div><strong>Astuces</strong>: maintenir le bouton (ou la touche <span class="mono">Espace</span>) pour parler. Un seul orateur à la fois.</div>
+        </div>
+      </section>
+
+      <aside class="right card">
+        <h3 style="margin-top:4px">Participants</h3>
+        <div class="list" id="userList"></div>
+        <h3 style="margin-top:16px">Orateur</h3>
+        <div class="row"><span id="holderName">—</span><small id="holderSince" class="muted"></small></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Join modal -->
+  <div class="modal" id="joinModal" role="dialog" aria-modal="true">
+    <div class="box">
+      <h2>Choisis un pseudo</h2>
+      <p class="muted">Ton pseudo sera visible pour les autres utilisateurs de la salle <b>global</b>.</p>
+      <div style="display:flex; gap: 10px; margin-top: 10px">
+        <input class="input" id="nickInput" placeholder="ex: Kykygosed" maxlength="24" />
+        <button class="btn primary" id="joinBtn">Rejoindre</button>
+      </div>
+      <p class="footer">Le micro ne sera demandé que lorsque tu parleras.</p>
+    </div>
+  </div>
+
+  <!-- Hidden audio sink for each remote track will be created dynamically -->
+
+  <script type="module">
+    /*********************************
+     * Firebase init
+     *********************************/
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getDatabase, ref, set, onValue, onDisconnect, remove, push, serverTimestamp, get, child, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQGmbiwh5LTVq0Wp1q9NrSQzs86vER2XM",
+  authDomain: "kychat-45596.firebaseapp.com",
+  databaseURL: "https://kychat-45596-default-rtdb.firebaseio.com",
+  projectId: "kychat-45596",
+  storageBucket: "kychat-45596.firebasestorage.app",
+  messagingSenderId: "104462848972",
+  appId: "1:104462848972:web:7ac49e63008e9a11150369"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    /*********************************
+     * Simple room model
+     *********************************/
+    const ROOM = 'global';
+    const roomRef = ref(db, `rooms/${ROOM}`);
+    const me = {
+      uid: crypto.randomUUID(),
+      name: '',
+      joinedAt: Date.now(),
+    };
+
+    const ui = {
+      modal: document.getElementById('joinModal'),
+      nickInput: document.getElementById('nickInput'),
+      joinBtn: document.getElementById('joinBtn'),
+      meTag: document.getElementById('meTag'),
+      ptt: document.getElementById('ptt'),
+      pttTitle: document.getElementById('pttTitle'),
+      pttHint: document.getElementById('pttHint'),
+      stateDot: document.getElementById('stateDot'),
+      stateText: document.getElementById('stateText'),
+      userList: document.getElementById('userList'),
+      holderName: document.getElementById('holderName'),
+      holderSince: document.getElementById('holderSince'),
+    };
+
+    /*********************************
+     * WebRTC peer mesh
+     *********************************/
+    const peers = new Map(); // peerUid -> { pc, audio, iceRefs, connId }
+    let localStream = null; // mic stream (created on first PTT)
+
+    const rtcConfig = {
+      iceServers: [
+        { urls: ["stun:stun.l.google.com:19302", "stun:global.stun.twilio.com:3478"] },
+      ],
+    };
+
+    function pcKey(a, b) { return [a, b].sort().join('_'); }
+
+    async function ensurePeerConnection(otherUid) {
+      if (peers.has(otherUid)) return peers.get(otherUid);
+      const pc = new RTCPeerConnection(rtcConfig);
+
+      // Prepare to receive audio
+      pc.addTransceiver('audio', { direction: 'sendrecv' });
+
+      const audio = document.createElement('audio');
+      audio.autoplay = true;
+      audio.playsInline = true;
+      document.body.appendChild(audio);
+
+      pc.ontrack = (ev) => {
+        const [track] = ev.streams[0]?.getAudioTracks() || [];
+        if (track) {
+          audio.srcObject = ev.streams[0];
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        // console.log('pc state', otherUid, pc.connectionState);
+      };
+
+      // Signaling paths
+      const id = pcKey(me.uid, otherUid);
+      const base = ref(db, `rooms/${ROOM}/signaling/${id}`);
+      const offerRef = ref(db, `rooms/${ROOM}/signaling/${id}/offer`);
+      const answerRef = ref(db, `rooms/${ROOM}/signaling/${id}/answer`);
+      const iceCaller = ref(db, `rooms/${ROOM}/signaling/${id}/ice/${me.uid}`);
+      const iceCallee = ref(db, `rooms/${ROOM}/signaling/${id}/ice/${otherUid}`);
+
+      // ICE local -> DB
+      pc.onicecandidate = (ev) => {
+        if (ev.candidate) {
+          const slot = push(iceCaller);
+          set(slot, ev.candidate.toJSON());
+        }
+      };
+
+      // ICE remote <- DB
+      onValue(iceCallee, (snap) => {
+        const vals = snap.val();
+        if (!vals) return;
+        Object.values(vals).forEach(async (c) => {
+          try { await pc.addIceCandidate(c); } catch {}
+        });
+      });
+
+      peers.set(otherUid, { pc, audio, base, offerRef, answerRef, iceCaller, iceCallee });
+
+      // Create offer if I'm the lower uid (deterministic initiator)
+      if (me.uid < otherUid) {
+        await createOfferTo(otherUid);
+      } else {
+        // Wait for offer
+        onValue(offerRef, async (snap) => {
+          const data = snap.val();
+          if (!data) return;
+          if (!pc.currentRemoteDescription) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await set(answerRef, answer);
+          }
+        });
+      }
+
+      // When answer arrives
+      onValue(answerRef, async (snap) => {
+        const data = snap.val();
+        if (!data) return;
+        if (!pc.currentRemoteDescription && me.uid < otherUid) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data));
+        }
+      });
+
+      return peers.get(otherUid);
+    }
+
+    async function createOfferTo(otherUid) {
+      const p = peers.get(otherUid);
+      if (!p) return;
+      const { pc, offerRef } = p;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await set(offerRef, offer);
+    }
+
+    async function attachMicToAllPeers() {
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      }
+      for (const [, { pc }] of peers) {
+        const senders = pc.getSenders();
+        let audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (!audioSender) {
+          // No sender with track yet: use first transceiver sender
+          const trans = pc.getTransceivers().find(t => t.receiver.track.kind === 'audio');
+          if (trans) audioSender = trans.sender;
+        }
+        if (audioSender) await audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+      }
+    }
+
+    async function detachMicFromAllPeers() {
+      for (const [, { pc }] of peers) {
+        const senders = pc.getSenders();
+        const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (audioSender) await audioSender.replaceTrack(null);
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+      }
+    }
+
+    /*********************************
+     * Presence & participants
+     *********************************/
+    const participantsRef = ref(db, `rooms/${ROOM}/participants`);
+    const myRef = ref(db, `rooms/${ROOM}/participants/${me.uid}`);
+
+    function renderParticipants(list) {
+      ui.userList.innerHTML = '';
+      Object.values(list || {}).sort((a,b) => a.name.localeCompare(b.name)).forEach(u => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span class="name ${u.uid===me.uid?'me':''}">${u.name}${u.uid===me.uid?' (moi)':''}</span><small class="muted">${new Date(u.joinedAt||Date.now()).toLocaleTimeString()}</small>`;
+        ui.userList.appendChild(row);
+      });
+    }
+
+    onValue(participantsRef, async (snap) => {
+      const users = snap.val() || {};
+      renderParticipants(users);
+      // Ensure peer connections
+      const others = Object.keys(users).filter(id => id !== me.uid);
+      for (const uid of others) await ensurePeerConnection(uid);
+    });
+
+    /*********************************
+     * Floor control (single speaker)
+     *********************************/
+    const floorRef = ref(db, `rooms/${ROOM}/floor`);
+    let heartbeatTimer = null;
+
+    function setState(state, hint='') {
+      ui.stateDot.classList.remove('idle','live','busy');
+      ui.ptt.classList.remove('held','locked');
+      if (state==='idle') ui.stateDot.classList.add('idle');
+      if (state==='live') { ui.stateDot.classList.add('live'); ui.ptt.classList.add('held'); }
+      if (state==='busy') { ui.stateDot.classList.add('busy'); ui.ptt.classList.add('locked'); }
+      ui.stateText.textContent = hint || (state==='idle'?'En attente…': state==='live'?'Tu parles':'Quelqu\'un parle');
+    }
+
+    function msToShort(ms){
+      const s = Math.floor(ms/1000); const m = Math.floor(s/60); const r = s%60;
+      if (m>0) return `${m}m ${r}s`;
+      return `${s}s`;
+    }
+
+    onValue(floorRef, (snap) => {
+      const val = snap.val();
+      const now = Date.now();
+      if (val && val.holder && (!val.expiresAt || val.expiresAt > now)) {
+        ui.holderName.textContent = `${val.holderName || val.holder}`;
+        ui.holderSince.textContent = val.since ? `depuis ${msToShort(now - val.since)}` : '';
+        if (val.holder === me.uid) {
+          setState('live', 'Tu as la parole');
+          ui.ptt.disabled = false;
+          ui.pttTitle.textContent = 'Relâcher pour arrêter';
+          ui.pttHint.textContent = 'Tu diffuses ton micro';
+        } else {
+          setState('busy', 'Parole occupée');
+          ui.ptt.disabled = false;
+          ui.pttTitle.textContent = 'Appuyer pour parler';
+          ui.pttHint.textContent = `${val.holderName || 'Quelqu\'un'} parle`;
+        }
+      } else {
+        ui.holderName.textContent = '—';
+        ui.holderSince.textContent = '';
+        setState('idle');
+        ui.ptt.disabled = false;
+        ui.pttTitle.textContent = 'Appuyer pour parler';
+        ui.pttHint.textContent = 'Personne ne parle';
+      }
+    });
+
+    async function tryAcquireFloor() {
+      const now = Date.now();
+      let got = false;
+      await runTransaction(floorRef, (curr) => {
+        const empty = !curr || !curr.holder || (curr.expiresAt && curr.expiresAt < now);
+        if (empty || curr.holder === me.uid) {
+          got = true;
+          return {
+            holder: me.uid,
+            holderName: me.name,
+            since: curr?.since || now,
+            // Keep-alive deadline (auto-release in case of crash)
+            expiresAt: now + 6000,
+          };
+        }
+        return curr;
+      });
+      if (got) startHeartbeat();
+      return got;
+    }
+
+    function startHeartbeat() {
+      stopHeartbeat();
+      heartbeatTimer = setInterval(async () => {
+        const now = Date.now();
+        await runTransaction(floorRef, (curr) => {
+          if (curr && curr.holder === me.uid) {
+            curr.expiresAt = now + 6000;
+            return curr;
+          }
+          return curr;
+        });
+      }, 2500);
+    }
+    function stopHeartbeat() { if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; } }
+
+    async function releaseFloor() {
+      stopHeartbeat();
+      await runTransaction(floorRef, (curr) => {
+        if (curr && curr.holder === me.uid) { return null; }
+        return curr;
+      });
+    }
+
+    /*********************************
+     * UI events – PTT
+     *********************************/
+    let holding = false;
+
+    async function beginTalk() {
+      // Try to acquire floor first
+      const ok = await tryAcquireFloor();
+      if (!ok) return; // someone else holds it
+
+      holding = true;
+      setState('live', 'Tu as la parole');
+      await attachMicToAllPeers();
+    }
+
+    async function endTalk() {
+      if (!holding) return;
+      holding = false;
+      await detachMicFromAllPeers();
+      await releaseFloor();
+      setState('idle');
+    }
+
+    // Pointer/mouse
+    ui.ptt.addEventListener('pointerdown', async (e) => {
+      e.preventDefault();
+      if (ui.ptt.disabled) return;
+      // If occupied by others, do nothing
+      const snap = await get(floorRef);
+      const f = snap.val();
+      const now = Date.now();
+      const locked = f && f.holder && f.holder !== me.uid && (!f.expiresAt || f.expiresAt > now);
+      if (!locked) beginTalk();
+    });
+    ui.ptt.addEventListener('pointerup', () => endTalk());
+    ui.ptt.addEventListener('pointerleave', () => endTalk());
+
+    // Keyboard: Space to PTT
+    window.addEventListener('keydown', async (e) => {
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        const snap = await get(floorRef);
+        const f = snap.val();
+        const now = Date.now();
+        const locked = f && f.holder && f.holder !== me.uid && (!f.expiresAt || f.expiresAt > now);
+        if (!locked) beginTalk();
+      }
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') endTalk(); });
+
+    // Release floor on unload
+    window.addEventListener('beforeunload', () => {
+      if (holding) detachMicFromAllPeers();
+      remove(ref(db, `rooms/${ROOM}/participants/${me.uid}`));
+      remove(ref(db, `rooms/${ROOM}/signaling`));
+      // Best-effort release
+      navigator.sendBeacon?.(`/`); // no-op just to keep event loop alive a tick
+    });
+
+    /*********************************
+     * Join flow
+     *********************************/
+    ui.joinBtn.addEventListener('click', joinRoom);
+    ui.nickInput.addEventListener('keydown', (e)=>{ if (e.key==='Enter') joinRoom(); });
+
+    async function joinRoom() {
+      const name = ui.nickInput.value.trim().slice(0,24) || `Invité-${String(Math.random()).slice(2,6)}`;
+      me.name = name;
+      ui.meTag.textContent = `${name} — ${me.uid.slice(0,6)}`;
+
+      await set(myRef, { uid: me.uid, name, joinedAt: Date.now() });
+      onDisconnect(myRef).remove();
+
+      // Enable PTT
+      ui.ptt.disabled = false;
+
+      // Hide modal
+      ui.modal.style.display = 'none';
+    }
+
+  </script>
+</body>
+</html>
