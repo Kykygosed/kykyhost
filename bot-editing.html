@@ -8,24 +8,140 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"></script>
 <style>
-body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
-.sidebar{width:220px;background:#1e1e2f;color:white;display:flex;flex-direction:column;justify-content:flex-start;padding:10px;gap:10px}
-.sidebar img{width:100px;margin:10px auto}
-.sidebar a{color:white;text-decoration:none;padding:10px;border-radius:5px;cursor:pointer;display:block}
-.sidebar a:hover{background:#2a2a40}
-.quit-btn{background:red;text-align:center;border-radius:5px;padding:10px;cursor:pointer;margin-top:auto}
-.main{flex:1;background:#f4f4f4;padding:20px;overflow-y:auto}
-.path{margin-bottom:10px;font-weight:bold}
-.file-list{list-style:none;padding:0}
-.file-item{display:flex;align-items:center;padding:6px;background:white;border:1px solid #ddd;margin-bottom:4px;border-radius:5px;cursor:pointer;position:relative}
-.file-item img{width:20px;margin-right:8px}
-.context-menu{position:absolute;display:none;background:white;border:1px solid #ccc;border-radius:5px;z-index:10}
-.context-menu div{padding:8px;cursor:pointer}
-.context-menu div:hover{background:#eee}
-#editor{height:80vh;width:100%;display:none;border:1px solid #ccc;border-radius:5px}
-.back-btn{background:#007bff;color:white;border:none;padding:8px 12px;border-radius:5px;cursor:pointer;margin-bottom:10px;display:none}
-.controls{margin-bottom:10px}
-.controls button{margin-right:5px;padding:5px 10px;border-radius:5px;border:none;background:#4facfe;color:white;cursor:pointer}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    background: url("https://imgur.com/mKW4Iag.jpeg") no-repeat center center fixed;
+    background-size: cover;
+}
+
+.sidebar {
+    width: 220px;
+    background: rgba(30, 30, 47, 0.95); 
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 10px;
+    gap: 10px;
+}
+
+.sidebar img {
+    width: 100px;
+    margin: 10px auto;
+}
+
+.sidebar a {
+    color: white;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: block;
+}
+
+.sidebar a:hover {
+    background: #2a2a40;
+}
+
+.quit-btn {
+    background: red;
+    text-align: center;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    margin-top: auto;
+}
+
+.main {
+    flex: 1;
+    background: rgba(244, 244, 244, 0.9); 
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 8px;
+    margin: 10px;
+}
+
+.path {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    background: white;
+    border: 1px solid #ddd;
+    margin-bottom: 4px;
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+}
+
+.file-item img {
+    width: 20px;
+    margin-right: 8px;
+}
+
+.context-menu {
+    position: absolute;
+    display: none;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    z-index: 10;
+}
+
+.context-menu div {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.context-menu div:hover {
+    background: #eee;
+}
+
+#editor {
+    height: 80vh;
+    width: 100%;
+    display: none;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.back-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    display: none;
+}
+
+.controls {
+    margin-bottom: 10px;
+}
+
+.controls button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: none;
+    background: #4facfe;
+    color: white;
+    cursor: pointer;
+}
+
 </style>
 </head>
 <body>
@@ -39,30 +155,29 @@ body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
 <div class="main">
   <div class="path" id="path">home/container</div>
   
-  <!-- Contrôles fichiers -->
 <div class="controls" id="fileControls">
   <button onclick="createFile()">+ Fichier</button>
   <button onclick="createDirectory()">+ Dossier</button>
   <input type="file" id="uploadInput" accept=".py,.txt,text/*" onchange="uploadFile(event)">
-  <button onclick="saveFile()">💾 Enregistrer</button> <!-- Nouveau bouton -->
+  <button onclick="saveFile()">💾 Enregistrer</button>
 </div>
 
   
   <button class="back-btn" id="backBtn" onclick="goBack()">⬅ Retour</button>
   
-  <!-- Liste des fichiers -->
+
   <ul class="file-list" id="fileList"></ul>
   
-  <!-- Éditeur Ace -->
+
   <div id="editor"></div>
   
-  <!-- Menu contextuel -->
+
   <div id="contextMenu" class="context-menu">
     <div onclick="renameItem()">Renommer</div>
     <div onclick="deleteItem()">Supprimer</div>
   </div>
   
-  <!-- Logs (caché par défaut) -->
+
   <div id="logsContainer" style="display:none;">
     <div id="botStatus" style="margin-bottom:10px;">
       Statut: <span id="statusText">-</span> 
@@ -99,12 +214,12 @@ const db = firebase.database();
 
 let currentUser, currentBot, currentPath="home/container", currentFile=null, currentItem=null;
 
-// ACE editor
+
 let editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.session.setMode("ace/mode/text");
 
-// Sidebar tabs & UI elements
+
 const filesTab = document.getElementById("files-tab");
 const logsTab = document.getElementById("logs-tab");
 const fileListEl = document.getElementById("fileList");
@@ -115,7 +230,7 @@ const statusText = document.getElementById("statusText");
 const statusDot = document.getElementById("statusDot");
 const logsBox = document.getElementById("logsBox");
 
-// Auth check
+
 firebase.auth().onAuthStateChanged(user=>{
   if(!user) return window.location="index.html";
   currentUser = user.uid;
@@ -127,19 +242,19 @@ firebase.auth().onAuthStateChanged(user=>{
   });
 });
 
-// Format filename
+
 function formatFilename(name,toDisplay=true){
   if(toDisplay) return name.replace(/_/g,".");
   else return name.replace(/\./g,"_");
 }
 
-// Firebase reference
+
 function getRef(path=currentPath){
   const relPath = path.replace("home/container","");
   return db.ref(`users/${currentUser}/bots/${currentBot}/files${relPath}`);
 }
 
-// Copier noeud Firebase
+
 function copyNode(sourceRef, targetRef){
   sourceRef.once("value").then(snap=>{
     targetRef.set(snap.val(), err=>{
@@ -149,7 +264,7 @@ function copyNode(sourceRef, targetRef){
   });
 }
 
-// Sauvegarder fichier ouvert dans Firebase
+
 function saveFile(){
   if(!currentFile) return alert("Aucun fichier ouvert");
   let content = editor.getValue().replace(/\n/g,"{%hostjump%}");
@@ -159,7 +274,7 @@ function saveFile(){
   });
 }
 
-// Création fichier vide
+
 function createFile(){
   let name = prompt("Nom du fichier (ex: test.py)");
   if(!name) return;
@@ -170,7 +285,7 @@ function createFile(){
   });
 }
 
-// Création dossier
+
 function createDirectory(){
   let name = prompt("Nom du dossier");
   if(!name) return;
@@ -180,7 +295,7 @@ function createDirectory(){
   });
 }
 
-// Upload fichier local
+
 function uploadFile(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -212,7 +327,7 @@ function openFile(name, content){
 }
 
 
-// Retour arrière
+
 function goBack(){
   if(currentFile){currentFile=null;loadFiles();}
   else{
@@ -225,7 +340,7 @@ function goBack(){
   }
 }
 
-// Sauvegarder fichier
+
 function saveFile(){
   if(!currentFile) return alert("Aucun fichier ouvert");
   let content = editor.getValue().replace(/\n/g,"{%hostjump%}");
@@ -233,7 +348,7 @@ function saveFile(){
   alert("Fichier sauvegardé !");
 }
 
-// Menu contextuel
+
 let contextMenu = document.getElementById("contextMenu");
 function showContextMenu(x,y,f){
   contextMenu.style.display="block";
@@ -242,7 +357,7 @@ function showContextMenu(x,y,f){
 }
 document.addEventListener("click",()=>{contextMenu.style.display="none";});
 
-// Supprimer / renommer
+
 function deleteItem(){
   if(!confirm("Supprimer cet élément ?")) return;
   getRef().child(currentFile).remove();
@@ -259,7 +374,7 @@ function renameItem(){
   loadFiles();
 }
 
-// Breadcrumb
+
 function updateBreadcrumb(){
   const pathDiv = document.getElementById("path");
   pathDiv.innerHTML = "";
@@ -283,7 +398,7 @@ function updateBreadcrumb(){
   });
 }
 
-// Charger fichiers
+
 function loadFiles(){
   fileListEl.innerHTML="";
   editorEl.style.display="none";
@@ -319,7 +434,7 @@ function loadFiles(){
   });
 }
 
-// Sidebar tab switching
+
 filesTab.onclick = ()=>{
   fileListEl.style.display="block";
   editorEl.style.display=(currentFile)?"block":"none";
@@ -333,11 +448,11 @@ logsTab.onclick = ()=> {
     fileControls.style.display="none";
     logsContainer.style.display="block";
     loadLogs();
-    updateBotSize(); // <-- mise à jour de la taille
+    updateBotSize(); 
 };
 
 
-// Logs et contrôle bot
+
 function addLog(msg, color="#0f0"){
   const line = document.createElement("div");
   line.innerText = msg;
@@ -383,14 +498,14 @@ function loadLogs(){
 
     const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
 
-    // Nettoyer tout ancien intervalle si on revient plusieurs fois dans l'onglet logs
+
     if (logsInterval) clearInterval(logsInterval);
 
-    // Actualisation toutes les 1 seconde
+
     logsInterval = setInterval(() => {
         logsRef.once("value").then(snap => {
             const logs = snap.val() || {};
-            logsBox.innerHTML = ""; // on efface avant de réafficher
+            logsBox.innerHTML = ""; 
             const sortedKeys = Object.keys(logs).sort((a, b) => parseInt(a) - parseInt(b));
             sortedKeys.forEach(key => {
                 addLog(logs[key]);
@@ -436,15 +551,15 @@ function loadLogs(){
     }
   });
 }
-// Met à jour la barre de taille du bot
+
 function updateBotSize() {
     const sizeRef = db.ref(`users/${currentUser}/bots/${currentBot}`);
     sizeRef.on("value", snap => {
         const data = snap.val();
         if (!data) return;
 
-        const size = data.size || 0;       // en octets
-        const max = data.maxLimit || 1;    // en octets
+        const size = data.size || 0;       
+        const max = data.maxLimit || 1;    
         const sizeMiB = (size / (1024*1024)).toFixed(2);
         const maxMiB = (max / (1024*1024)).toFixed(2);
 
@@ -455,15 +570,15 @@ function updateBotSize() {
         const bar = document.getElementById("sizeBar");
         bar.style.width = percent + "%";
 
-        // Couleur selon seuil
+
         if (percent >= 100) bar.style.background = "red";
-        else if (max - size <= 10 * 1024 * 1024) bar.style.background = "orange"; // 10 MiB avant max
+        else if (max - size <= 10 * 1024 * 1024) bar.style.background = "orange"; 
         else bar.style.background = "green";
     });
 }
 
 
-// Initial load
+
 loadFiles();
 </script>
 
