@@ -376,24 +376,21 @@ function updateStatus(){
 
 
 function loadLogs(){
-  logsBox.innerHTML = "";
-  addLog("Chargement des logs...");
+    logsBox.innerHTML = "";
+    updateStatus();
+    addLog("Chargement des logs...");
 
-  const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
-  
-  // On récupère les clés (timestamps) et on trie
-  logsRef.once("value").then(snap => {
-    const logs = snap.val() || {};
-    const sortedKeys = Object.keys(logs).sort((a, b) => parseInt(a) - parseInt(b));
-    sortedKeys.forEach(key => {
-      addLog(logs[key]);
+    const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
+
+    // Écoute les nouveaux logs
+    logsRef.on("child_added", snap => {
+        addLog(snap.val());
     });
-  });
 
-  // On écoute aussi les nouveaux logs en temps réel
-  logsRef.on("child_added", snap => {
-    addLog(snap.val());
-  });
+    // Écoute les logs supprimés (pour effacer l'UI si le bot est offline)
+    logsRef.on("child_removed", snap => {
+        logsBox.innerHTML = "";
+    });
 }
 
 
