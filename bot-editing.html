@@ -63,17 +63,18 @@ const firebaseConfig = {
   appId:"1:342562811927:web:0fed1e1f511c4fddcfec52"
 };
 firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
+const db = firebase.database();
+
 let currentUser, currentBot, currentPath="home/container", currentFile=null, currentItem=null;
-let editor=ace.edit("editor");
+let editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.session.setMode("ace/mode/text");
 
 firebase.auth().onAuthStateChanged(user=>{
   if(!user) return window.location="index.html";
-  currentUser=user.uid;
-  firebase.database().ref(`users/${currentUser}/noweditingBot`).once("value").then(snap=>{
-    currentBot=snap.val();
+  currentUser = user.uid;
+  db.ref(`users/${currentUser}/noweditingBot`).once("value").then(snap=>{
+    currentBot = snap.val();
     if(!currentBot) return alert("Aucun bot en cours d'édition !");
     loadFiles();
   });
@@ -89,53 +90,41 @@ function getRef(path=currentPath){
   return db.ref(`users/${currentUser}/bots/${currentBot}/files${relPath}`);
 }
 
-function loadFiles(){
-  document.getElementById("fileList").innerHTML="";
-  document.getElementById("editor").style.display="none";
-  document.getElementById("backBtn").style.display=(currentPath==="home/container")?"none":"inline-block";
-
-  getRef().once("value").then(snap=>{
-    const files = snap.val() || {};
-    for(let f in files){
-      let li=document.createElement("li");
-      li.className="file-item";
-      currentItem=li;
-      let displayName=formatFilename(f,true);
-      let imgSrc="unknown.png";
-      if(typeof files[f]==="object") imgSrc="directory.png";
-      else if(f.endsWith("_py")) imgSrc="py.png";
-      else if(f.endsWith("_txt")) imgSrc="txt.png";
-
-      li.innerHTML=`<img src="${imgSrc}">${displayName}`;
-      li.onclick=()=>{if(typeof files[f]==="object"){currentPath+="/"+f;document.getElementById("path").innerText=currentPath;loadFiles()}else{openFile(f,files[f])}};
-      li.oncontextmenu=(e)=>{e.preventDefault();currentItem=li;currentFile=f;showContextMenu(e.clientX,e.clientY,f);};
-      document.getElementById("fileList").appendChild(li);
-    }
+// Copier un noeud Firebase pour renommer
+function copyNode(sourceRef, targetRef){
+  sourceRef.once("value").then(snap=>{
+    targetRef.set(snap.val(), err=>{
+      if(err) console.error("Erreur copy:", err);
+      else sourceRef.remove();
+    });
   });
 }
 
-// Création fichier
+// Créer fichier
 function createFile(){
-  let name=prompt("Nom du fichier (ex: test.py)");if(!name)return;
-  let dbName=formatFilename(name,false);
+  let name = prompt("Nom du fichier (ex: test.py)");
+  if(!name) return;
+  let dbName = formatFilename(name,false);
   getRef().child(dbName).set(" ");
   loadFiles();
 }
 
-// Création dossier
+// Créer dossier
 function createDirectory(){
-  let name=prompt("Nom du dossier");if(!name)return;
+  let name = prompt("Nom du dossier");
+  if(!name) return;
   getRef().child(name).set({});
   loadFiles();
 }
 
 // Upload fichier texte
 function uploadFile(e){
-  const file=e.target.files[0];if(!file)return;
-  let reader=new FileReader();
-  reader.onload=function(ev){
-    let content=ev.target.result.replace(/\n/g,"{%hostjump%}");
-    let dbName=formatFilename(file.name,false);
+  const file = e.target.files[0];
+  if(!file) return;
+  let reader = new FileReader();
+  reader.onload = function(ev){
+    let content = ev.target.result.replace(/\n/g,"{%hostjump%}");
+    let dbName = formatFilename(file.name,false);
     getRef().child(dbName).set(content);
     loadFiles();
   };
@@ -144,12 +133,12 @@ function uploadFile(e){
 
 // Ouvrir fichier
 function openFile(name,content){
-  currentFile=name;
+  currentFile = name;
   document.getElementById("fileList").innerHTML="";
   document.getElementById("editor").style.display="block";
   document.getElementById("backBtn").style.display="inline-block";
 
-  let lang="text";
+  let lang = "text";
   if(name.endsWith("_py")) lang="python";
   if(name.endsWith("_txt")) lang="text";
   editor.session.setMode("ace/mode/"+lang);
@@ -160,41 +149,116 @@ function openFile(name,content){
 function goBack(){
   if(currentFile){currentFile=null;loadFiles();}
   else{
-    let parts=currentPath.split("/");
-    parts.pop();
-    currentPath=parts.join("/");
-    document.getElementById("path").innerText=currentPath;
-    loadFiles();
+    let parts = currentPath.split("/");
+    if(parts.length>2){
+      parts.pop();
+      currentPath = parts.join("/");
+      loadFiles();
+    }
   }
 }
 
-// Sauvegarde fichier
+// Sauvegarder fichier
 function saveFile(){
-  if(!currentFile)return alert("Aucun fichier ouvert");
-  let content=editor.getValue().replace(/\n/g,"{%hostjump%}");
+  if(!currentFile) return alert("Aucun fichier ouvert");
+  let content = editor.getValue().replace(/\n/g,"{%hostjump%}");
   getRef().child(currentFile).set(content);
   alert("Fichier sauvegardé !");
 }
 
 // Menu contextuel
-let contextMenu=document.getElementById("contextMenu");
+let contextMenu = document.getElementById("contextMenu");
 function showContextMenu(x,y,f){
   contextMenu.style.display="block";
-  contextMenu.style.left=x+"px";
-  contextMenu.style.top=y+"px";
+  contextMenu.style.left = x+"px";
+  contextMenu.style.top = y+"px";
 }
 document.addEventListener("click",()=>{contextMenu.style.display="none";});
+
+// Supprimer
 function deleteItem(){
   if(!confirm("Supprimer cet élément ?")) return;
   getRef().child(currentFile).remove();
   loadFiles();
 }
+
+// Renommer
 function renameItem(){
-  let newName=prompt("Nouveau nom :",currentFile);
+  let newName = prompt("Nouveau nom :",currentFile);
   if(!newName) return;
-  let dbNew=formatFilename(newName,false);
-  getRef().child(dbNew).set(null); // placeholder pour copier + delete
+  let dbNew = formatFilename(newName,false);
+  let sourceRef = getRef().child(currentFile);
+  let targetRef = getRef().child(dbNew);
+  copyNode(sourceRef,targetRef);
+  currentFile = null;
+  loadFiles();
 }
+
+// Breadcrumb clickable
+function updateBreadcrumb(){
+  const pathDiv = document.getElementById("path");
+  pathDiv.innerHTML = "";
+  let parts = currentPath.split("/");
+  let accumulated = [];
+  parts.forEach((p,i)=>{
+    accumulated.push(p);
+    let span = document.createElement("span");
+    span.innerText = p;
+    span.style.cursor = "pointer";
+    span.style.textDecoration = "underline";
+    span.style.marginRight = "5px";
+    span.onclick = ()=>{
+      currentPath = accumulated.join("/");
+      loadFiles();
+    };
+    pathDiv.appendChild(span);
+    if(i<parts.length-1){
+      let sep = document.createElement("span");
+      sep.innerText = "/";
+      sep.style.marginRight="5px";
+      pathDiv.appendChild(sep);
+    }
+  });
+}
+
+// Charger fichiers et dossiers
+function loadFiles(){
+  document.getElementById("fileList").innerHTML="";
+  document.getElementById("editor").style.display="none";
+  document.getElementById("backBtn").style.display=(currentPath==="home/container")?"none":"inline-block";
+  updateBreadcrumb();
+
+  getRef().once("value").then(snap=>{
+    const files = snap.val() || {};
+    for(let f in files){
+      let li = document.createElement("li");
+      li.className = "file-item";
+      currentItem = li;
+      let displayName = formatFilename(f,true);
+      let imgSrc = "unknown.png";
+      if(typeof files[f] === "object") imgSrc = "directory.png";
+      else if(f.endsWith("_py")) imgSrc = "py.png";
+      else if(f.endsWith("_txt")) imgSrc = "txt.png";
+
+      li.innerHTML = `<img src="${imgSrc}">${displayName}`;
+      li.onclick = ()=>{
+        if(typeof files[f]==="object"){currentPath+="/"+f;loadFiles();}
+        else{openFile(f,files[f]);}
+      };
+      li.oncontextmenu = (e)=>{
+        e.preventDefault();
+        currentItem=li;
+        currentFile=f;
+        showContextMenu(e.clientX,e.clientY,f);
+      };
+      document.getElementById("fileList").appendChild(li);
+    }
+  });
+}
+
+// Initial load
+loadFiles();
 </script>
+
 </body>
 </html>
