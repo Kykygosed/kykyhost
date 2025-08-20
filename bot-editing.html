@@ -190,20 +190,20 @@ function uploadFile(e){
 }
 
 
-// Ouvrir fichier
-function openFile(name,content){
+function openFile(name, content){
   currentFile = name;
-  fileListEl.style.display="none";
-  fileControls.style.display="none";
-  editorEl.style.display="block";
-  document.getElementById("backBtn").style.display="inline-block";
+  fileListEl.style.display = "none";
+  editorEl.style.display = "block";
+  document.getElementById("backBtn").style.display = "inline-block";
+  fileControls.style.display = "block"; // garder le bouton Enregistrer visible
 
   let lang = "text";
-  if(name.endsWith("_py")) lang="python";
-  if(name.endsWith("_txt")) lang="text";
-  editor.session.setMode("ace/mode/"+lang);
-  editor.setValue(content.replace(/{%hostjump%}/g,"\n"),-1);
+  if(name.endsWith("_py")) lang = "python";
+  if(name.endsWith("_txt")) lang = "text";
+  editor.session.setMode("ace/mode/" + lang);
+  editor.setValue(content.replace(/{%hostjump%}/g,"\n"), -1);
 }
+
 
 // Retour arrière
 function goBack(){
