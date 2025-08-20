@@ -1,24 +1,408 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KykyUNO - Menu</title>
-<link rel="stylesheet" href="css/style.css">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KykyUNO — Connexion</title>
+
+<style>
+  :root{
+    --bg:#0f1724;
+    --card:#1f2937;
+    --accent:#06b6d4;
+    --glass: rgba(255,255,255,0.04);
+    --muted: #9ca3af;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,#071126 0%, #0b2233 100%);
+    color:#e6eef6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .card {
+    width:980px;
+    max-width:100%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border-radius:14px;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+    padding:18px;
+    display:grid;
+    grid-template-columns: 420px 1fr;
+    gap:18px;
+    align-items:start;
+  }
+
+  .left {
+    padding:18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+    border-radius:10px;
+    min-height:300px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  h1{ margin:0; font-size:28px; letter-spacing:-0.5px }
+  p.lead { margin:0; color:var(--muted) }
+
+  label { font-size:13px; color:var(--muted); margin-top:8px; display:block }
+  input[type="text"]{
+    width:100%;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.04);
+    background:var(--card);
+    color:inherit;
+    font-size:15px;
+  }
+
+  .btn {
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    padding:10px 14px;
+    border-radius:10px;
+    border:0;
+    cursor:pointer;
+    font-weight:600;
+    font-size:15px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(90deg,var(--accent),#34d399);
+    color:#022;
+    box-shadow: 0 6px 18px rgba(6,182,212,0.12);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border:1px solid rgba(255,255,255,0.06);
+    color:var(--muted);
+  }
+
+  .menu {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:6px;
+  }
+
+  .hostBox {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:6px;
+  }
+
+  .right {
+    padding:18px;
+    border-radius:10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    min-height:300px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .info {
+    background:var(--glass);
+    padding:12px;
+    border-radius:8px;
+    color:var(--muted);
+  }
+
+  .small { font-size:13px; color:var(--muted) }
+
+  .row { display:flex; gap:8px; align-items:center }
+  .codeInput { width:180px; }
+
+  .footer {
+    margin-top:auto;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .notice {
+    padding:10px;
+    border-radius:8px;
+    background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(52,211,153,0.03));
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  @media (max-width:880px){
+    .card { grid-template-columns: 1fr; padding:12px }
+    .left, .right { min-height:auto }
+  }
+</style>
 </head>
 <body>
-<div id="menu">
-  <h1>KykyUNO</h1>
-  <input id="pseudo" placeholder="Pseudo"/>
-  <div id="menuButtons">
-    <button onclick="hostGame()">HOST UNE PARTIE</button>
-    <input id="joinCode" placeholder="Code de la partie"/>
-    <button onclick="joinGame()">REJOINDRE UNE PARTIE</button>
+
+<div class="card" role="main" aria-labelledby="title">
+  <div class="left">
+    <h1 id="title">KykyUNO</h1>
+    <p class="lead">Entre un pseudo et crée/rejoins une partie. (Rejoindre aléatoire → non implémenté)</p>
+
+    <label for="pseudo">Ton pseudo</label>
+    <input id="pseudo" type="text" placeholder="Ex : Kykygosed" maxlength="20" />
+
+    <div class="menu" aria-hidden="false">
+      <div class="hostBox">
+        <button class="btn btn-primary" id="btnHost" onclick="hostGame()">
+          ▶ HOST UNE PARTIE
+        </button>
+
+        <div class="row">
+          <input id="joinCode" class="codeInput" type="text" placeholder="Code de la partie (ex: AB12CD)" />
+          <button class="btn btn-ghost" id="btnJoin" onclick="joinGame()">REJOINDRE AVEC UN CODE</button>
+        </div>
+
+        <button class="btn btn-ghost" id="btnRandom" onclick="alert('Non implémenté pour l\'instant')">
+          REJOINDRE UNE PARTIE ALÉATOIRE (NON IMPLEMENTE)
+        </button>
+      </div>
+    </div>
+
+    <div class="footer small">
+      Remarque : les parties sont stockées dans Firebase Realtime Database. Si tu veux tester à plusieurs, ouvre plusieurs onglets/navigateurs et utilise différents pseudos.
+    </div>
+  </div>
+
+  <div class="right" aria-live="polite">
+    <div class="info">
+      <strong>Etat :</strong>
+      <div id="statusText" class="small">Prêt</div>
+    </div>
+
+    <div class="info">
+      <strong>Exemple de règles rapides</strong>
+      <ul style="margin:8px 0 0 18px; color:var(--muted);">
+        <li>Chaque joueur reçoit 5 cartes.</li>
+        <li>Cartes spéciales : MIX, Changement de couleur, Reset.</li>
+        <li>On joue une carte par tour. Si temps écoulé → passe au suivant.</li>
+      </ul>
+    </div>
+
+    <div class="notice">
+      Code partie : UNE CHAINE COURTE, unique. Le host voit le code et peut lancer la partie depuis la page du jeu.
+    </div>
+
+    <div style="margin-top:10px;">
+      <strong>Dernière action</strong>
+      <div id="lastAction" class="small">—</div>
+    </div>
   </div>
 </div>
 
-<script src="js/app.js"></script>
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+/* ---------------------------
+   CONFIG FIREBASE (TA CONFIG)
+   --------------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDyWu4TI4PIRXfeb7yqt0WIGClgu10IjkM",
+  authDomain: "kylita-f2923.firebaseapp.com",
+  databaseURL: "https://kylita-f2923-default-rtdb.firebaseio.com",
+  projectId: "kylita-f2923",
+  storageBucket: "kylita-f2923.firebasestorage.app",
+  messagingSenderId: "431823530994",
+  appId: "1:431823530994:web:88a07e633751686e5ad96b",
+  measurementId: "G-F4LLNWQJ16"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ---------------------------
+   UTILITAIRES
+   --------------------------- */
+function generateGameCode(){
+  // 6 caractères alphanumériques (majuscules)
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function getBaseDeck(){
+  const colors = ["Rouge","Bleu","Jaune","Vert"];
+  const deck = [];
+  colors.forEach(c => {
+    for(let i=1;i<=4;i++) deck.push(c + "," + i);
+  });
+  deck.push("Rouge,MIX","Bleu,MIX","Jaune,MIX","Vert,MIX","Changement de couleur","Reset");
+  return deck;
+}
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function uiSetStatus(txt){
+  document.getElementById('statusText').innerText = txt;
+}
+
+/* ---------------------------
+   HOST UNE PARTIE
+   --------------------------- */
+async function hostGame(){
+  const pseudo = document.getElementById('pseudo').value.trim();
+  if(!pseudo){ alert("Entre un pseudo."); return; }
+
+  uiSetStatus("Création de la partie...");
+
+  const code = generateGameCode();
+  const gameRef = db.ref('games/' + code);
+
+  // Construire deck et distribuer 5 cartes au host
+  const baseDeck = getBaseDeck();
+  const shuffled = shuffle(baseDeck.slice());
+  const hostCards = shuffled.slice(0,5);
+  const remainingDeck = shuffled.slice(5);
+
+  const gameObj = {
+    host: pseudo,
+    status: 'waiting', // waiting | started | finished
+    createdAt: Date.now(),
+    players: {},
+    deck: remainingDeck,
+    discard: [],
+    currentTurn: pseudo,
+    lastAction: null
+  };
+  gameObj.players[pseudo] = {
+    cards: hostCards,
+    connected: true,
+    joinedAt: Date.now()
+  };
+
+  try{
+    await gameRef.set(gameObj);
+    uiSetStatus("Partie créée. Code: " + code);
+    // redirection vers game.html en conservant code & pseudo
+    window.location.href = "game.html?code=" + code + "&pseudo=" + encodeURIComponent(pseudo);
+  } catch(e){
+    console.error(e);
+    alert("Erreur lors de la création de la partie.");
+    uiSetStatus("Erreur lors de la création.");
+  }
+}
+
+/* ---------------------------
+   REJOINDRE AVEC UN CODE
+   --------------------------- */
+function joinGame(){
+  const pseudo = document.getElementById('pseudo').value.trim();
+  const code = (document.getElementById('joinCode').value || "").trim().toUpperCase();
+
+  if(!pseudo){ alert("Entre un pseudo."); return; }
+  if(!code){ alert("Entre un code de partie."); return; }
+
+  uiSetStatus("Tentative de rejoindre la partie...");
+
+  const gameRef = db.ref('games/' + code);
+
+  // On utilise une transaction pour tirer 5 cartes du deck et ajouter le joueur
+  gameRef.transaction(game => {
+    if(game === null){
+      // Partie inexistante
+      return; // transaction abort
+    }
+    // si partie déjà commencée, on peut encore décider d'autoriser ou non
+    if(game.status && game.status !== 'waiting'){
+      // refuse de rejoindre si partie déjà démarrée
+      return; // abort
+    }
+
+    // ensure deck exists
+    if(!game.deck || !Array.isArray(game.deck) || game.deck.length < 5){
+      // si deck trop petit, reconstituer un nouveau deck (mélange de base)
+      const newDeck = shuffle(getBaseDeck());
+      game.deck = newDeck;
+    }
+
+    // tirer 5 cartes depuis le deck
+    const taken = game.deck.splice(0,5);
+    if(!game.players) game.players = {};
+    // si le pseudo existe déjà, on le met connecté (ne remplace pas ses cartes si déjà présent)
+    if(game.players[pseudo] && game.players[pseudo].connected){
+      // déjà présent -> on ne change rien (simple reconnect)
+      game.players[pseudo].connected = true;
+      game.players[pseudo].lastReconnectedAt = Date.now();
+    } else {
+      game.players[pseudo] = {
+        cards: taken,
+        connected: true,
+        joinedAt: Date.now()
+      };
+    }
+
+    // update lastAction
+    game.lastAction = { type: 'join', player: pseudo, time: Date.now() };
+
+    return game;
+  }, function(error, committed, snapshot){
+    if(error){
+      console.error('Transaction failed abnormally!', error);
+      alert("Erreur lors de la tentative de rejoindre.");
+      uiSetStatus("Erreur transaction.");
+    } else if(!committed){
+      alert("Impossible de rejoindre : partie introuvable ou déjà démarrée.");
+      uiSetStatus("Rejoint échoué.");
+    } else {
+      uiSetStatus("Rejoint avec succès. Redirection...");
+      // redirection
+      setTimeout(()=>{
+        window.location.href = "game.html?code=" + code + "&pseudo=" + encodeURIComponent(pseudo);
+      }, 350);
+    }
+  }, /*applyLocally=*/ false);
+}
+
+/* ---------------------------
+   ÉCOUTE UI (OPTIONNEL)
+   --------------------------- */
+// On affiche la dernière partie en cours si on tape un code existant
+document.getElementById('joinCode').addEventListener('blur', function(){
+  const code = (this.value||"").trim().toUpperCase();
+  if(!code) return;
+  const ref = db.ref('games/' + code);
+  ref.get().then(snap => {
+    if(!snap.exists()){
+      document.getElementById('lastAction').innerText = "Partie introuvable.";
+      return;
+    }
+    const g = snap.val();
+    const players = g.players ? Object.keys(g.players).length : 0;
+    document.getElementById('lastAction').innerText = "Status: " + (g.status||'waiting') + " — Joueurs: " + players;
+  }).catch(e=>{
+    console.error(e);
+  });
+});
+
+/* ---------------------------
+   POUR DEV : Affiche les erreurs Firebase
+   --------------------------- */
+firebase.database().ref('.info/connected').on('value', function(snap){
+  if(snap.val() === true){
+    // connecté
+  } else {
+    // déconnecté
+  }
+});
+
+</script>
 </body>
 </html>
