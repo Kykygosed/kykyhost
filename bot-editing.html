@@ -40,12 +40,13 @@ body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
   <div class="path" id="path">home/container</div>
   
   <!-- Contrôles fichiers -->
-  <div class="controls" id="fileControls">
-    <button onclick="createFile()">+ Fichier</button>
-    <button onclick="createDirectory()">+ Dossier</button>
-    <input type="file" id="uploadInput" accept=".py,.txt,text/*" onchange="uploadFile(event)">
-    <button onclick="saveFile()">💾 Enregistrer</button>
-  </div>
+<div class="controls" id="fileControls">
+  <button onclick="createFile()">+ Fichier</button>
+  <button onclick="createDirectory()">+ Dossier</button>
+  <input type="file" id="uploadInput" accept=".py,.txt,text/*" onchange="uploadFile(event)">
+  <button onclick="saveFile()">💾 Enregistrer</button> <!-- Nouveau bouton -->
+</div>
+
   
   <button class="back-btn" id="backBtn" onclick="goBack()">⬅ Retour</button>
   
