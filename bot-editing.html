@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Bot Editing - Gestion fichiers</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -10,138 +11,244 @@
 <style>
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Montserrat', Arial, sans-serif;
     display: flex;
     height: 100vh;
     background: url("https://imgur.com/mKW4Iag.jpeg") no-repeat center center fixed;
     background-size: cover;
 }
-
 .sidebar {
-    width: 220px;
-    background: rgba(30, 30, 47, 0.95); 
+    width: 240px;
+    background: rgba(30, 30, 47, 0.85);
     color: white;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding: 10px;
-    gap: 10px;
+    padding: 20px 10px;
+    gap: 18px;
+    box-shadow: 2px 0 16px rgba(0,0,0,0.12);
+    border-top-right-radius: 24px;
+    border-bottom-right-radius: 24px;
+    backdrop-filter: blur(8px);
 }
-
 .sidebar img {
-    width: 100px;
-    margin: 10px auto;
+    width: 110px;
+    margin: 18px auto 10px auto;
+    filter: drop-shadow(0 0 8px #4facfe);
 }
-
 .sidebar a {
     color: white;
     text-decoration: none;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px 18px;
+    border-radius: 8px;
     cursor: pointer;
     display: block;
+    font-weight: 600;
+    transition: background 0.2s;
+    letter-spacing: 0.5px;
 }
-
 .sidebar a:hover {
-    background: #2a2a40;
+    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
+    color: #222;
 }
-
 .quit-btn {
-    background: red;
+    background: linear-gradient(90deg,#ff5858 0%,#f09819 100%);
     text-align: center;
-    border-radius: 5px;
-    padding: 10px;
+    border-radius: 8px;
+    padding: 12px;
     cursor: pointer;
     margin-top: auto;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(255,88,88,0.15);
+    transition: background 0.2s;
 }
-
+.quit-btn:hover {
+    background: linear-gradient(90deg,#f09819 0%,#ff5858 100%);
+    color: #fff;
+}
 .main {
     flex: 1;
-    background: rgba(244, 244, 244, 0.9); 
-    padding: 20px;
+    background: rgba(244, 244, 244, 0.7);
+    padding: 32px 28px;
     overflow-y: auto;
-    border-radius: 8px;
-    margin: 10px;
+    border-radius: 24px;
+    margin: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    backdrop-filter: blur(6px);
 }
-
 .path {
-    margin-bottom: 10px;
+    margin-bottom: 18px;
     font-weight: bold;
+    font-size: 1.1em;
+    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
-
+.path span {
+    background: rgba(255,255,255,0.7);
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-right: 2px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    transition: background 0.2s;
+}
+.path span:hover {
+    background: #4facfe;
+    color: #fff;
+}
 .file-list {
     list-style: none;
     padding: 0;
+    margin-top: 12px;
 }
-
 .file-item {
     display: flex;
     align-items: center;
-    padding: 6px;
-    background: white;
-    border: 1px solid #ddd;
-    margin-bottom: 4px;
-    border-radius: 5px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid #e0e0e0;
+    margin-bottom: 7px;
+    border-radius: 8px;
     cursor: pointer;
     position: relative;
+    font-size: 1.05em;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    transition: background 0.2s;
 }
-
+.file-item:hover {
+    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
+    color: #222;
+}
 .file-item img {
-    width: 20px;
-    margin-right: 8px;
+    width: 24px;
+    margin-right: 12px;
+    filter: drop-shadow(0 0 4px #4facfe);
 }
-
 .context-menu {
     position: absolute;
     display: none;
     background: white;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 8px;
     z-index: 10;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    min-width: 120px;
 }
-
 .context-menu div {
-    padding: 8px;
+    padding: 10px 18px;
     cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
 }
-
 .context-menu div:hover {
-    background: #eee;
+    background: #4facfe;
+    color: #fff;
 }
-
 #editor {
-    height: 80vh;
+    height: 70vh;
     width: 100%;
     display: none;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    margin-top: 18px;
 }
-
 .back-btn {
-    background: #007bff;
+    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
     color: white;
     border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
+    padding: 10px 18px;
+    border-radius: 8px;
     cursor: pointer;
-    margin-bottom: 10px;
+    margin-bottom: 18px;
+    font-weight: bold;
+    font-size: 1em;
+    box-shadow: 0 2px 8px rgba(79,172,254,0.12);
+    transition: background 0.2s;
     display: none;
 }
-
-.controls {
-    margin-bottom: 10px;
+.back-btn:hover {
+    background: linear-gradient(90deg,#00f2fe 0%,#4facfe 100%);
+    color: #222;
 }
-
+.controls {
+    margin-bottom: 18px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
 .controls button {
-    margin-right: 5px;
-    padding: 5px 10px;
-    border-radius: 5px;
+    margin-right: 0;
+    padding: 8px 16px;
+    border-radius: 8px;
     border: none;
-    background: #4facfe;
+    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
     color: white;
     cursor: pointer;
+    font-weight: 600;
+    font-size: 1em;
+    box-shadow: 0 2px 8px rgba(79,172,254,0.10);
+    transition: background 0.2s;
 }
-
+.controls button:hover {
+    background: linear-gradient(90deg,#00f2fe 0%,#4facfe 100%);
+    color: #222;
+}
+.controls input[type="file"] {
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 1em;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+#logsContainer {
+    margin-top: 18px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.85);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    padding: 18px;
+}
+#botStatus {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #fff;
+}
+#statusDot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+    box-shadow: 0 0 8px #4facfe;
+}
+#logsBox {
+    background: #111;
+    color: #0f0;
+    padding: 14px;
+    height: 50vh;
+    overflow-y: auto;
+    font-family: 'Fira Mono', monospace;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 1em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+#botSizeContainer {
+    margin-top: 18px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+#sizeBar {
+    height:100%;
+    width:0%;
+    background:green;
+    border-radius: 5px;
+    transition: width 0.5s, background 0.3s;
+}
 </style>
 </head>
 <body>
@@ -279,9 +386,19 @@ function createFile(){
   let name = prompt("Nom du fichier (ex: test.py)");
   if(!name) return;
   let dbName = formatFilename(name,false);
-  getRef().child(dbName).set(" ", err=>{
-    if(err) alert("Erreur création fichier : "+err);
-    loadFiles();
+  // Vérifie si le fichier existe déjà
+  getRef().child(dbName).once("value").then(snap=>{
+    if(snap.exists()) {
+      alert("Ce fichier existe déjà !");
+      return;
+    }
+    getRef().child(dbName).set(" ", err=>{
+      if(err) alert("Erreur création fichier : "+err);
+      else {
+        loadFiles();
+        updateBotSize(); // Met à jour la taille après création
+      }
+    });
   });
 }
 
@@ -305,7 +422,10 @@ function uploadFile(e){
     let dbName = formatFilename(file.name,false);
     getRef().child(dbName).set(content, err=>{
       if(err) alert("Erreur upload : "+err);
-      loadFiles();
+      else {
+        loadFiles();
+        updateBotSize(); // Met à jour la taille après upload
+      }
     });
   };
   reader.readAsText(file);
@@ -360,8 +480,10 @@ document.addEventListener("click",()=>{contextMenu.style.display="none";});
 
 function deleteItem(){
   if(!confirm("Supprimer cet élément ?")) return;
-  getRef().child(currentFile).remove();
-  loadFiles();
+  getRef().child(currentFile).remove().then(()=>{
+    loadFiles();
+    updateBotSize(); // Met à jour la taille après suppression
+  });
 }
 function renameItem(){
   let newName = prompt("Nouveau nom :",currentFile);
@@ -371,7 +493,10 @@ function renameItem(){
   let targetRef = getRef().child(dbNew);
   copyNode(sourceRef,targetRef);
   currentFile = null;
-  loadFiles();
+  setTimeout(()=>{
+    loadFiles();
+    updateBotSize(); // Met à jour la taille après renommage
+  }, 500);
 }
 
 
@@ -431,6 +556,7 @@ function loadFiles(){
       };
       fileListEl.appendChild(li);
     }
+    updateBotSize(); // Met à jour la taille à chaque affichage
   });
 }
 
@@ -552,31 +678,45 @@ function loadLogs(){
   });
 }
 
-function updateBotSize() {
-    const sizeRef = db.ref(`users/${currentUser}/bots/${currentBot}`);
-    sizeRef.on("value", snap => {
-        const data = snap.val();
-        if (!data) return;
-
-        const size = data.size || 0;       
-        const max = data.maxLimit || 1;    
-        const sizeMiB = (size / (1024*1024)).toFixed(2);
-        const maxMiB = (max / (1024*1024)).toFixed(2);
-
-        document.getElementById("sizeText").innerText = sizeMiB;
-        document.getElementById("maxText").innerText = maxMiB;
-
-        let percent = Math.min(100, (size / max) * 100);
-        const bar = document.getElementById("sizeBar");
-        bar.style.width = percent + "%";
-
-
-        if (percent >= 100) bar.style.background = "red";
-        else if (max - size <= 10 * 1024 * 1024) bar.style.background = "orange"; 
-        else bar.style.background = "green";
-    });
+function calculateSize(obj) {
+  let total = 0;
+  function traverse(node) {
+    if(typeof node === "string") {
+      total += node.length;
+    } else if(typeof node === "object" && node !== null) {
+      for(let k in node) traverse(node[k]);
+    }
+  }
+  traverse(obj);
+  return total;
 }
 
+function updateBotSize() {
+    const sizeRef = db.ref(`users/${currentUser}/bots/${currentBot}/files`);
+    const maxRef = db.ref(`users/${currentUser}/bots/${currentBot}/maxLimit`);
+
+    sizeRef.once("value").then(snap => {
+        const files = snap.val() || {};
+        const size = calculateSize(files);
+
+        maxRef.once("value").then(maxSnap => {
+            const max = maxSnap.val() || (50 * 1024 * 1024); // fallback 50MiB
+            const sizeMiB = (size / (1024*1024)).toFixed(2);
+            const maxMiB = (max / (1024*1024)).toFixed(2);
+
+            document.getElementById("sizeText").innerText = sizeMiB;
+            document.getElementById("maxText").innerText = maxMiB;
+
+            let percent = Math.min(100, (size / max) * 100);
+            const bar = document.getElementById("sizeBar");
+            bar.style.width = percent + "%";
+
+            if (percent >= 100) bar.style.background = "red";
+            else if (max - size <= 10 * 1024 * 1024) bar.style.background = "orange";
+            else bar.style.background = "green";
+        });
+    });
+}
 
 
 loadFiles();
