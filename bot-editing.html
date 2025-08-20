@@ -439,10 +439,10 @@ function updateBotSize() {
         const data = snap.val();
         if (!data) return;
 
-        const size = data.size || 0;
-        const max = data.maxLimit || 1; // éviter division par 0
-        const sizeMiB = (size / 1024).toFixed(2);
-        const maxMiB = (max / 1024).toFixed(2);
+        const size = data.size || 0;       // en octets
+        const max = data.maxLimit || 1;    // en octets
+        const sizeMiB = (size / (1024*1024)).toFixed(2);
+        const maxMiB = (max / (1024*1024)).toFixed(2);
 
         document.getElementById("sizeText").innerText = sizeMiB;
         document.getElementById("maxText").innerText = maxMiB;
@@ -453,10 +453,11 @@ function updateBotSize() {
 
         // Couleur selon seuil
         if (percent >= 100) bar.style.background = "red";
-        else if (max - size <= 10 * 1024) bar.style.background = "orange"; // 10 MiB avant max
+        else if (max - size <= 10 * 1024 * 1024) bar.style.background = "orange"; // 10 MiB avant max
         else bar.style.background = "green";
     });
 }
+
 
 // Initial load
 loadFiles();
