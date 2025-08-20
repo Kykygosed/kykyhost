@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Lobby UNO</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #2b2b2b; color: white; text-align: center; }
+    .popup { background: #444; padding: 20px; border-radius: 10px; width: 400px; margin: 50px auto; }
+    .code { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+    .players { margin: 10px 0; }
+    .player { padding: 5px; border-bottom: 1px solid #666; }
+    button { background: #28a745; color: white; border: none; padding: 10px; margin-top: 15px; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #218838; }
+  </style>
+</head>
+<body>
+  <h1>Lobby de la partie</h1>
+  <div class="popup">
+    <div class="code">Code de la partie : <span id="gameCode"></span></div>
+    <h3>Joueurs connectés :</h3>
+    <div id="players" class="players"></div>
+    <button id="startBtn" style="display:none;">Lancer la partie</button>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyWu4TI4PIRXfeb7yqt0WIGClgu10IjkM",
+      authDomain: "kylita-f2923.firebaseapp.com",
+      databaseURL: "https://kylita-f2923-default-rtdb.firebaseio.com",
+      projectId: "kylita-f2923",
+      storageBucket: "kylita-f2923.firebasestorage.app",
+      messagingSenderId: "431823530994",
+      appId: "1:431823530994:web:88a07e633751686e5ad96b",
+      measurementId: "G-F4LLNWQJ16"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameCode = urlParams.get("code");
+    const pseudo = localStorage.getItem("pseudo") || "Inconnu";
+    const isHost = urlParams.get("host") === "true";
+
+    document.getElementById("gameCode").textContent = gameCode;
+
+    // Ajouter le joueur dans la liste
+    const playerRef = db.ref("games/" + gameCode + "/players/" + pseudo);
+    playerRef.set({ name: pseudo });
+    playerRef.onDisconnect().remove();
+
+    // Afficher la liste des joueurs
+    db.ref("games/" + gameCode + "/players").on("value", snapshot => {
+      const playersDiv = document.getElementById("players");
+      playersDiv.innerHTML = "";
+      snapshot.forEach(child => {
+        const p = document.createElement("div");
+        p.className = "player";
+        p.textContent = child.val().name;
+        playersDiv.appendChild(p);
+      });
+    });
+
+    // Montrer le bouton Lancer seulement pour le host
+    if (isHost) {
+      document.getElementById("startBtn").style.display = "block";
+      document.getElementById("startBtn").addEventListener("click", () => {
+        db.ref("games/" + gameCode).update({ gameStarted: true });
+      });
+    }
+
+    // Quand la partie commence, rediriger tout le monde
+    db.ref("games/" + gameCode + "/gameStarted").on("value", snapshot => {
+      if (snapshot.val() === true) {
+        window.location.href = "game.html?code=" + gameCode + "&pseudo=" + pseudo;
+      }
+    });
+  </script>
+</body>
+</html>
