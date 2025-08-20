@@ -74,6 +74,13 @@ body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
       <button onclick="stopBotUI()">Éteindre</button>
     </div>
   </div>
+  <div id="botSizeContainer" style="margin-top:10px;">
+    <div style="margin-bottom:5px;">Taille du bot : <span id="sizeText">0</span> / <span id="maxText">0</span> MiB</div>
+    <div style="width:100%;background:#ddd;border-radius:5px;height:20px;overflow:hidden;">
+        <div id="sizeBar" style="height:100%;width:0%;background:green;"></div>
+    </div>
+</div>
+
 </div>
 
 
@@ -320,13 +327,15 @@ filesTab.onclick = ()=>{
   fileControls.style.display="block";
 };
 
-logsTab.onclick = ()=>{
-  fileListEl.style.display="none";
-  editorEl.style.display="none";
-  fileControls.style.display="none";
-  logsContainer.style.display="block";
-  loadLogs();
+logsTab.onclick = ()=> {
+    fileListEl.style.display="none";
+    editorEl.style.display="none";
+    fileControls.style.display="none";
+    logsContainer.style.display="block";
+    loadLogs();
+    updateBotSize(); // <-- mise à jour de la taille
 };
+
 
 // Logs et contrôle bot
 function addLog(msg, color="#0f0"){
@@ -338,25 +347,33 @@ function addLog(msg, color="#0f0"){
 }
 
 function updateStatus(){
-  db.ref(`users/${currentUser}/bots/${currentBot}/status`).on("value", snap => {
-    const status = snap.val();
-    if(status === "true"){
-      statusText.innerText = "Démarrage...";
-      statusDot.style.background = "orange";
-    } else if(status === "online"){
-      statusText.innerText = "En ligne";
-      statusDot.style.background = "green";
-    } else if(status === "false"){
-      statusText.innerText = "Arrêt...";
-      statusDot.style.background = "orange";
-    } else if(status === "offline"){
-      statusText.innerText = "Arrêté";
-      statusDot.style.background = "red";
-      // Effacer tous les logs si le bot est offline
-      logsBox.innerHTML = "";
-    }
-  });
+    const statusRef = db.ref(`users/${currentUser}/bots/${currentBot}/status`);
+    const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
+    
+    statusRef.on("value", snap => {
+        const status = snap.val();
+        if(status === "true"){
+            statusText.innerText = "Démarrage...";
+            statusDot.style.background = "orange";
+        } else if(status === "online"){
+            statusText.innerText = "En ligne";
+            statusDot.style.background = "green";
+        } else if(status === "false"){
+            statusText.innerText = "Arrêt...";
+            statusDot.style.background = "orange";
+        } else if(status === "offline"){
+            statusText.innerText = "Arrêté";
+            statusDot.style.background = "red";
+            // Effacer logs côté UI
+            logsBox.innerHTML = "";
+            // Supprimer logs dans Firebase
+            logsRef.remove().then(()=> {
+                console.log("Logs supprimés car bot offline");
+            });
+        }
+    });
 }
+
 
 function loadLogs(){
   logsBox.innerHTML = "";
@@ -414,6 +431,31 @@ function loadLogs(){
       addLog(logs[key]);
     }
   });
+}
+// Met à jour la barre de taille du bot
+function updateBotSize() {
+    const sizeRef = db.ref(`users/${currentUser}/bots/${currentBot}`);
+    sizeRef.on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+
+        const size = data.size || 0;
+        const max = data.maxLimit || 1; // éviter division par 0
+        const sizeMiB = (size / 1024).toFixed(2);
+        const maxMiB = (max / 1024).toFixed(2);
+
+        document.getElementById("sizeText").innerText = sizeMiB;
+        document.getElementById("maxText").innerText = maxMiB;
+
+        let percent = Math.min(100, (size / max) * 100);
+        const bar = document.getElementById("sizeBar");
+        bar.style.width = percent + "%";
+
+        // Couleur selon seuil
+        if (percent >= 100) bar.style.background = "red";
+        else if (max - size <= 10 * 1024) bar.style.background = "orange"; // 10 MiB avant max
+        else bar.style.background = "green";
+    });
 }
 
 // Initial load
