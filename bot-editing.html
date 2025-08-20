@@ -35,22 +35,46 @@ body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
   <a id="logs-tab">📝 Logs</a>
   <div class="quit-btn" onclick="window.location.href='dashboard.html'">Quitter</div>
 </div>
+
 <div class="main">
   <div class="path" id="path">home/container</div>
-  <div class="controls">
+  
+  <!-- Contrôles fichiers -->
+  <div class="controls" id="fileControls">
     <button onclick="createFile()">+ Fichier</button>
     <button onclick="createDirectory()">+ Dossier</button>
     <input type="file" id="uploadInput" accept=".py,.txt,text/*" onchange="uploadFile(event)">
     <button onclick="saveFile()">💾 Enregistrer</button>
   </div>
+  
   <button class="back-btn" id="backBtn" onclick="goBack()">⬅ Retour</button>
+  
+  <!-- Liste des fichiers -->
   <ul class="file-list" id="fileList"></ul>
+  
+  <!-- Éditeur Ace -->
   <div id="editor"></div>
+  
+  <!-- Menu contextuel -->
   <div id="contextMenu" class="context-menu">
     <div onclick="renameItem()">Renommer</div>
     <div onclick="deleteItem()">Supprimer</div>
   </div>
+  
+  <!-- Logs (caché par défaut) -->
+  <div id="logsContainer" style="display:none;">
+    <div id="botStatus" style="margin-bottom:10px;">
+      Statut: <span id="statusText">-</span> 
+      <span id="statusDot" style="width:10px;height:10px;border-radius:50%;display:inline-block;"></span>
+    </div>
+    <div id="logsBox" style="background:#000;color:#0f0;padding:10px;height:60vh;overflow-y:auto;font-family:monospace;"></div>
+    <div style="margin-top:10px;">
+      <button onclick="startBot()">Démarrer / Redémarrer</button>
+      <button onclick="stopBotUI()">Éteindre</button>
+    </div>
+  </div>
 </div>
+
 
 <script>
 const firebaseConfig = {
@@ -66,10 +90,24 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentUser, currentBot, currentPath="home/container", currentFile=null, currentItem=null;
+
+// ACE editor
 let editor = ace.edit("editor");
 editor.setTheme("ace/theme/monokai");
 editor.session.setMode("ace/mode/text");
 
+// Sidebar tabs
+const filesTab = document.getElementById("files-tab");
+const logsTab = document.getElementById("logs-tab");
+const fileListEl = document.getElementById("fileList");
+const editorEl = document.getElementById("editor");
+const fileControls = document.getElementById("fileControls");
+const logsContainer = document.getElementById("logsContainer");
+const statusText = document.getElementById("statusText");
+const statusDot = document.getElementById("statusDot");
+const logsBox = document.getElementById("logsBox");
+
+// Auth check
 firebase.auth().onAuthStateChanged(user=>{
   if(!user) return window.location="index.html";
   currentUser = user.uid;
@@ -80,17 +118,19 @@ firebase.auth().onAuthStateChanged(user=>{
   });
 });
 
+// Format filename
 function formatFilename(name,toDisplay=true){
   if(toDisplay) return name.replace(/_/g,".");
   else return name.replace(/\./g,"_");
 }
 
+// Firebase reference
 function getRef(path=currentPath){
   const relPath = path.replace("home/container","");
   return db.ref(`users/${currentUser}/bots/${currentBot}/files${relPath}`);
 }
 
-// Copier un noeud Firebase pour renommer
+// Copier noeud Firebase
 function copyNode(sourceRef, targetRef){
   sourceRef.once("value").then(snap=>{
     targetRef.set(snap.val(), err=>{
@@ -134,8 +174,9 @@ function uploadFile(e){
 // Ouvrir fichier
 function openFile(name,content){
   currentFile = name;
-  document.getElementById("fileList").innerHTML="";
-  document.getElementById("editor").style.display="block";
+  fileListEl.style.display="none";
+  fileControls.style.display="none";
+  editorEl.style.display="block";
   document.getElementById("backBtn").style.display="inline-block";
 
   let lang = "text";
@@ -194,7 +235,7 @@ function renameItem(){
   loadFiles();
 }
 
-// Breadcrumb clickable
+// Breadcrumb
 function updateBreadcrumb(){
   const pathDiv = document.getElementById("path");
   pathDiv.innerHTML = "";
@@ -207,10 +248,7 @@ function updateBreadcrumb(){
     span.style.cursor = "pointer";
     span.style.textDecoration = "underline";
     span.style.marginRight = "5px";
-    span.onclick = ()=>{
-      currentPath = accumulated.join("/");
-      loadFiles();
-    };
+    span.onclick = ()=>{currentPath = accumulated.join("/"); loadFiles();};
     pathDiv.appendChild(span);
     if(i<parts.length-1){
       let sep = document.createElement("span");
@@ -221,10 +259,11 @@ function updateBreadcrumb(){
   });
 }
 
-// Charger fichiers et dossiers
+// Charger fichiers
 function loadFiles(){
-  document.getElementById("fileList").innerHTML="";
-  document.getElementById("editor").style.display="none";
+  fileListEl.innerHTML="";
+  editorEl.style.display="none";
+  fileControls.style.display="block";
   document.getElementById("backBtn").style.display=(currentPath==="home/container")?"none":"inline-block";
   updateBreadcrumb();
 
@@ -251,7 +290,78 @@ function loadFiles(){
         currentFile=f;
         showContextMenu(e.clientX,e.clientY,f);
       };
-      document.getElementById("fileList").appendChild(li);
+      fileListEl.appendChild(li);
+    }
+  });
+}
+
+// Sidebar tab switching
+filesTab.onclick = ()=>{
+  fileListEl.style.display="block";
+  editorEl.style.display=(currentFile)?"block":"none";
+  logsContainer.style.display="none";
+  fileControls.style.display="block";
+};
+
+logsTab.onclick = ()=>{
+  fileListEl.style.display="none";
+  editorEl.style.display="none";
+  fileControls.style.display="none";
+  logsContainer.style.display="block";
+  loadLogs();
+};
+
+// Logs et contrôle bot
+function addLog(msg,color="#0f0"){
+  const line = document.createElement("div");
+  line.innerText = msg;
+  line.style.color=color;
+  logsBox.appendChild(line);
+  logsBox.scrollTop = logsBox.scrollHeight;
+}
+
+function updateStatus(){
+  db.ref(`users/${currentUser}/bots/${currentBot}/status`).once("value").then(snap=>{
+    const status = snap.val();
+    if(status==="true"){statusText.innerText="Démarrage..."; statusDot.style.background="orange";}
+    else if(status==="online"){statusText.innerText="En ligne"; statusDot.style.background="green";}
+    else if(status==="false"){statusText.innerText="Arrêt..."; statusDot.style.background="orange";}
+    else if(status==="offline"){statusText.innerText="Arrêté"; statusDot.style.background="red";}
+  });
+}
+
+function startBot(){
+  db.ref(`users/${currentUser}/bots/${currentBot}`).update({status:"true"}).then(()=>{
+    addLog("Démarrage du bot...");
+    setTimeout(()=>{
+      db.ref(`users/${currentUser}/bots/${currentBot}`).update({status:"online"});
+      addLog("Bot en ligne ✅");
+      updateStatus();
+    },2000);
+    updateStatus();
+  });
+}
+
+function stopBotUI(){
+  db.ref(`users/${currentUser}/bots/${currentBot}`).update({status:"false"}).then(()=>{
+    addLog("Arrêt du bot...");
+    setTimeout(()=>{
+      db.ref(`users/${currentUser}/bots/${currentBot}`).update({status:"offline"});
+      addLog("Bot arrêté ❌");
+      updateStatus();
+    },2000);
+    updateStatus();
+  });
+}
+
+function loadLogs(){
+  logsBox.innerHTML="";
+  updateStatus();
+  addLog("Chargement des logs...");
+  db.ref(`users/${currentUser}/bots/${currentBot}/logs`).once("value").then(snap=>{
+    const logs = snap.val()||{};
+    for(let key in logs){
+      addLog(logs[key]);
     }
   });
 }
