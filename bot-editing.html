@@ -141,20 +141,38 @@ function copyNode(sourceRef, targetRef){
   });
 }
 
-// Créer fichier / dossier / upload
+// Sauvegarder fichier ouvert dans Firebase
+function saveFile(){
+  if(!currentFile) return alert("Aucun fichier ouvert");
+  let content = editor.getValue().replace(/\n/g,"{%hostjump%}");
+  getRef().child(currentFile).set(content, err=>{
+    if(err) alert("Erreur lors de la sauvegarde : "+err);
+    else alert("Fichier sauvegardé ✅");
+  });
+}
+
+// Création fichier vide
 function createFile(){
   let name = prompt("Nom du fichier (ex: test.py)");
   if(!name) return;
   let dbName = formatFilename(name,false);
-  getRef().child(dbName).set(" ");
-  loadFiles();
+  getRef().child(dbName).set(" ", err=>{
+    if(err) alert("Erreur création fichier : "+err);
+    loadFiles();
+  });
 }
+
+// Création dossier
 function createDirectory(){
   let name = prompt("Nom du dossier");
   if(!name) return;
-  getRef().child(name).set({});
-  loadFiles();
+  getRef().child(name).set({}, err=>{
+    if(err) alert("Erreur création dossier : "+err);
+    loadFiles();
+  });
 }
+
+// Upload fichier local
 function uploadFile(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -162,11 +180,14 @@ function uploadFile(e){
   reader.onload = function(ev){
     let content = ev.target.result.replace(/\n/g,"{%hostjump%}");
     let dbName = formatFilename(file.name,false);
-    getRef().child(dbName).set(content);
-    loadFiles();
+    getRef().child(dbName).set(content, err=>{
+      if(err) alert("Erreur upload : "+err);
+      loadFiles();
+    });
   };
   reader.readAsText(file);
 }
+
 
 // Ouvrir fichier
 function openFile(name,content){
