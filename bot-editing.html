@@ -375,23 +375,30 @@ function updateStatus(){
 }
 
 
+let logsInterval;
+
 function loadLogs(){
     logsBox.innerHTML = "";
-    updateStatus();
     addLog("Chargement des logs...");
 
     const logsRef = db.ref(`users/${currentUser}/bots/${currentBot}/logs`);
 
-    // Écoute les nouveaux logs
-    logsRef.on("child_added", snap => {
-        addLog(snap.val());
-    });
+    // Nettoyer tout ancien intervalle si on revient plusieurs fois dans l'onglet logs
+    if (logsInterval) clearInterval(logsInterval);
 
-    // Écoute les logs supprimés (pour effacer l'UI si le bot est offline)
-    logsRef.on("child_removed", snap => {
-        logsBox.innerHTML = "";
-    });
+    // Actualisation toutes les 1 seconde
+    logsInterval = setInterval(() => {
+        logsRef.once("value").then(snap => {
+            const logs = snap.val() || {};
+            logsBox.innerHTML = ""; // on efface avant de réafficher
+            const sortedKeys = Object.keys(logs).sort((a, b) => parseInt(a) - parseInt(b));
+            sortedKeys.forEach(key => {
+                addLog(logs[key]);
+            });
+        });
+    }, 1000);
 }
+
 
 
 function startBot(){
