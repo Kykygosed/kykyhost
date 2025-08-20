@@ -102,43 +102,50 @@
       ref.on("value", (snap) => renderBots(snap.val() || {}));
     }
 
-    // Render
-    function renderBots(bots){
-      const container = document.getElementById("botsList");
-      const empty = document.getElementById("emptyState");
-      container.innerHTML = "";
+    // Render user's bots
+function renderBots(bots){
+  const container = document.getElementById("botsList");
+  const empty = document.getElementById("emptyState");
+  container.innerHTML = "";
 
-      const ids = Object.keys(bots);
-      empty.style.display = ids.length ? "none" : "block";
+  const ids = Object.keys(bots);
+  empty.style.display = ids.length ? "none" : "block";
 
-      ids.sort((a,b)=> (bots[a].createdAt||"").localeCompare(bots[b].createdAt||""));
+  ids.sort((a,b)=> (bots[a].createdAt||"").localeCompare(bots[b].createdAt||""));
 
-      ids.forEach(botId => {
-        const bot = bots[botId];
-        const isOnline = !!bot.status;
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="name">${escapeHtml(bot.name || botId)}</div>
-          <div class="status">
-            <span class="dot ${isOnline ? 'on':'off'}"></span>
-            ${isOnline ? 'En ligne' : 'Hors ligne'}
-          </div>
-          <div class="row">
-            ${isOnline
-              ? `<button class="btn secondary" onclick="stopBot('${botId}')">Arrêter</button>`
-              : `<button class="btn primary" onclick="startBot('${botId}')">Démarrer</button>`
-            }
-            <button class="btn primary" onclick="editBot('${botId}')">Éditer</button>
-          </div>
-          <div class="row">
-            <button class="btn secondary" onclick="viewBot('${botId}')">Voir</button>
-            <button class="btn danger" onclick="deleteBot('${botId}')">Supprimer</button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
+  ids.forEach(botId => {
+    const bot = bots[botId];
+    const isOnline = !!bot.status;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="name">${escapeHtml(bot.name || botId)}</div>
+      <div class="status">
+        <span class="dot ${isOnline ? 'on':'off'}"></span>
+        ${isOnline ? 'En ligne' : 'Hors ligne'}
+      </div>
+      <div class="row">
+        ${isOnline
+          ? `<button class="btn secondary" onclick="stopBot('${botId}')">Arrêter</button>`
+          : `<button class="btn primary" onclick="startBot('${botId}')">Démarrer</button>`
+        }
+        <button class="btn primary" onclick="editBot('${botId}')">Éditer</button>
+      </div>
+      <div class="row">
+        <button class="btn secondary" onclick="viewBot('${botId}')">Voir</button>
+        <button class="btn danger" onclick="deleteBot('${botId}')">Supprimer</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // Vérifier si l'utilisateur a le droit admin dans la DB
+  db.ref(`users/${currentUser.uid}/admin`).once("value").then(snap => {
+    if(snap.val() === true){
+      renderAdminBots(container);
     }
+  });
+}
 
     // Create bot
     document.getElementById("createBotBtn").addEventListener("click", () => {
