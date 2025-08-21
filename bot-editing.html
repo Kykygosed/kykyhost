@@ -16,202 +16,216 @@ body {
     height: 100vh;
     background: url("https://imgur.com/mKW4Iag.jpeg") no-repeat center center fixed;
     background-size: cover;
+    color: #222;
 }
+
+/* ───── Sidebar ───── */
 .sidebar {
-    width: 240px;
-    background: rgba(30, 30, 47, 0.85);
+    width: 70px; /* compacte */
+    background: linear-gradient(to bottom, #243B55, #141E30); /* dégradé bleu */
     color: white;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    padding: 20px 10px;
-    gap: 18px;
-    box-shadow: 2px 0 16px rgba(0,0,0,0.12);
-    border-top-right-radius: 24px;
-    border-bottom-right-radius: 24px;
-    backdrop-filter: blur(8px);
-}
-.sidebar img {
-    width: 110px;
-    margin: 18px auto 10px auto;
-    filter: drop-shadow(0 0 8px #4facfe);
-}
-.sidebar a {
-    color: white;
-    text-decoration: none;
-    padding: 12px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: block;
-    font-weight: 600;
-    transition: background 0.2s;
-    letter-spacing: 0.5px;
-}
-.sidebar a:hover {
-    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
-    color: #222;
-}
-.quit-btn {
-    background: linear-gradient(90deg,#ff5858 0%,#f09819 100%);
-    text-align: center;
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    margin-top: auto;
-    font-weight: bold;
-    box-shadow: 0 2px 8px rgba(255,88,88,0.15);
-    transition: background 0.2s;
-}
-.quit-btn:hover {
-    background: linear-gradient(90deg,#f09819 0%,#ff5858 100%);
-    color: #fff;
-}
-.main {
-    flex: 1;
-    background: rgba(244, 244, 244, 0.7);
-    padding: 32px 28px;
-    overflow-y: auto;
-    border-radius: 24px;
-    margin: 18px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    align-items: center;
+    padding: 15px 0;
+    gap: 20px;
+    border-radius: 0 20px 20px 0;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.3);
     backdrop-filter: blur(6px);
 }
-.path {
-    margin-bottom: 18px;
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #222;
+
+.sidebar img {
+    width: 40px;
+    margin: 10px 0 30px 0;
+    filter: drop-shadow(0 0 6px #4facfe);
+}
+
+.sidebar a {
+    width: 45px;
+    height: 45px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-size: 1.5em; /* si icônes emoji */
+}
+
+.sidebar a:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.1);
+}
+
+/* bouton quitter en bas */
+.quit-btn {
+    margin-top: auto;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg,#ff5858,#f09819);
+    border-radius: 12px;
+    font-size: 1.3em;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: transform 0.25s;
+}
+.quit-btn:hover {
+    transform: scale(1.15);
+}
+
+/* ───── Main ───── */
+.main {
+    flex: 1;
+    background: rgba(255,255,255,0.75);
+    padding: 35px 30px;
+    margin: 20px;
+    border-radius: 30px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+}
+
+/* Breadcrumb */
+.path {
+    margin-bottom: 22px;
+    font-weight: 700;
+    font-size: 1.2em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 .path span {
-    background: rgba(255,255,255,0.7);
-    padding: 3px 10px;
-    border-radius: 6px;
-    margin-right: 2px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-    transition: background 0.2s;
+    background: rgba(255,255,255,0.85);
+    padding: 6px 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
 }
 .path span:hover {
     background: #4facfe;
     color: #fff;
 }
+
+/* File list */
 .file-list {
     list-style: none;
     padding: 0;
-    margin-top: 12px;
+    margin-top: 15px;
 }
 .file-item {
     display: flex;
     align-items: center;
-    padding: 10px 14px;
-    background: rgba(255,255,255,0.85);
-    border: 1px solid #e0e0e0;
-    margin-bottom: 7px;
-    border-radius: 8px;
-    cursor: pointer;
-    position: relative;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #e5e5e5;
+    margin-bottom: 10px;
+    border-radius: 12px;
     font-size: 1.05em;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-    transition: background 0.2s;
+    font-weight: 500;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.25s ease;
+    cursor: pointer;
 }
 .file-item:hover {
-    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
-    color: #222;
+    background: linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);
+    color: #111;
+    transform: scale(1.02);
 }
 .file-item img {
-    width: 24px;
+    width: 26px;
     margin-right: 12px;
-    filter: drop-shadow(0 0 4px #4facfe);
 }
+
+/* Context menu */
 .context-menu {
     position: absolute;
     display: none;
     background: white;
     border: 1px solid #ccc;
-    border-radius: 8px;
-    z-index: 10;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-    min-width: 120px;
+    border-radius: 12px;
+    z-index: 20;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    overflow: hidden;
 }
 .context-menu div {
-    padding: 10px 18px;
+    padding: 12px 18px;
     cursor: pointer;
-    border-radius: 8px;
     transition: background 0.2s;
 }
 .context-menu div:hover {
     background: #4facfe;
     color: #fff;
 }
+
+/* Ace editor */
 #editor {
     height: 70vh;
     width: 100%;
     display: none;
     border: 1px solid #ccc;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    margin-top: 18px;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
 }
-.back-btn {
-    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
-    color: white;
+
+/* ───── Boutons harmonisés avec la sidebar ───── */
+button,
+.back-btn,
+.controls button {
     border: none;
     padding: 10px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 18px;
-    font-weight: bold;
-    font-size: 1em;
-    box-shadow: 0 2px 8px rgba(79,172,254,0.12);
-    transition: background 0.2s;
-    display: none;
-}
-.back-btn:hover {
-    background: linear-gradient(90deg,#00f2fe 0%,#4facfe 100%);
-    color: #222;
-}
-.controls {
-    margin-bottom: 18px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.controls button {
-    margin-right: 0;
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: none;
-    background: linear-gradient(90deg,#4facfe 0%,#00f2fe 100%);
-    color: white;
-    cursor: pointer;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 1em;
-    box-shadow: 0 2px 8px rgba(79,172,254,0.10);
-    transition: background 0.2s;
+    cursor: pointer;
+    background: linear-gradient(to right, #243B55, #141E30); /* même palette que sidebar */
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: all 0.3s ease;
+    font-size: 0.95em;
 }
+button:hover,
+.back-btn:hover,
 .controls button:hover {
-    background: linear-gradient(90deg,#00f2fe 0%,#4facfe 100%);
-    color: #222;
+    background: linear-gradient(to right, #3a557a, #1c2b45);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(79,172,254,0.4);
+}
+
+.controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
 }
 .controls input[type="file"] {
-    background: #fff;
-    border-radius: 8px;
-    padding: 6px;
-    font-size: 1em;
-    border: 1px solid #ddd;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(to right, #243B55, #141E30);
+    color: #fff;
+    font-size: 0.9em;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    transition: all 0.3s ease;
 }
+.controls input[type="file"]:hover {
+    background: linear-gradient(to right, #3a557a, #1c2b45);
+    transform: scale(1.03);
+    box-shadow: 0 5px 14px rgba(79,172,254,0.35);
+}
+
+/* ───── Logs ───── */
 #logsContainer {
-    margin-top: 18px;
-    border-radius: 12px;
-    background: rgba(0,0,0,0.85);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    padding: 18px;
+    margin-top: 20px;
+    border-radius: 20px;
+    background: rgba(15,15,15,0.9);
+    padding: 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.15);
 }
 #botStatus {
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: bold;
     color: #fff;
 }
@@ -220,43 +234,46 @@ body {
     height: 14px;
     border-radius: 50%;
     display: inline-block;
-    margin-left: 8px;
-    box-shadow: 0 0 8px #4facfe;
+    margin-left: 10px;
+    box-shadow: 0 0 10px #4facfe;
 }
 #logsBox {
     background: #111;
     color: #0f0;
-    padding: 14px;
+    padding: 16px;
     height: 50vh;
     overflow-y: auto;
     font-family: 'Fira Mono', monospace;
-    border-radius: 8px;
-    margin-top: 10px;
-    font-size: 1em;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-}
-#botSizeContainer {
-    margin-top: 18px;
-    background: rgba(255,255,255,0.85);
     border-radius: 12px;
-    padding: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-top: 12px;
+    font-size: 0.95em;
+}
+
+/* ───── Bot size ───── */
+#botSizeContainer {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 #sizeBar {
-    height:100%;
-    width:0%;
-    background:green;
-    border-radius: 5px;
-    transition: width 0.5s, background 0.3s;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg,#4caf50,#8bc34a);
+    border-radius: 8px;
+    transition: width 0.4s, background 0.3s;
 }
+
+
 </style>
 </head>
 <body>
 <div class="sidebar">
   <img src="logo.png" alt="Logo">
-  <a id="files-tab">📂 Fichiers</a>
-  <a id="logs-tab">📝 Logs</a>
-  <div class="quit-btn" onclick="window.location.href='dashboard.html'">Quitter</div>
+  <a id="files-tab">📂</a>
+  <a id="logs-tab">📝</a>
+  <div class="quit-btn" onclick="window.location.href='dashboard.html'">X</div>
 </div>
 
 <div class="main">
@@ -292,7 +309,7 @@ body {
     </div>
     <div id="logsBox" style="background:#000;color:#0f0;padding:10px;height:60vh;overflow-y:auto;font-family:monospace;"></div>
     <div style="margin-top:10px;">
-      <button onclick="startBot()">Démarrer / Redémarrer</button>
+      <button onclick="startBot()">Démarrer</button>
       <button onclick="stopBotUI()">Éteindre</button>
     </div>
   </div>
